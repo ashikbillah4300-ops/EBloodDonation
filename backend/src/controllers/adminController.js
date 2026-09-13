@@ -12,13 +12,23 @@ const getDashboardStats = async (req, res) => {
     const completedRequests = await BloodRequest.count({ where: { status: 'COMPLETED' } });
     const totalDonations = await Donation.count();
 
+    // App Condition & Health telemetry
+    const uptimeSeconds = process.uptime();
+    const memoryUsage = process.memoryUsage();
+    const nodeVersion = process.version;
+    const dbStatus = 'ONLINE (PostgreSQL Neon)';
+
+    const settings = await AppSetting.findAll();
+    const settingsMap = {};
+    settings.forEach(s => { settingsMap[s.setting_key] = s.setting_value; });
+
     const recentUsers = await User.findAll({
-      limit: 5,
+      limit: 8,
       order: [['createdAt', 'DESC']]
     });
 
     const recentRequests = await BloodRequest.findAll({
-      limit: 5,
+      limit: 8,
       order: [['createdAt', 'DESC']]
     });
 
@@ -34,6 +44,17 @@ const getDashboardStats = async (req, res) => {
           completedRequests,
           totalDonations
         },
+        condition: {
+          serverStatus: 'HEALTHY',
+          databaseStatus: dbStatus,
+          uptimeSeconds: Math.floor(uptimeSeconds),
+          memoryUsageMb: Math.round(memoryUsage.heapUsed / 1024 / 1024),
+          nodeVersion: nodeVersion,
+          maintenanceMode: settingsMap['maintenance_mode'] === 'true',
+          depositMethod: settingsMap['deposit_method'] || 'bKash',
+          depositNumber: settingsMap['deposit_number'] || settingsMap['donation_number'] || '01969114300'
+        },
+        settings: settingsMap,
         recentUsers,
         recentRequests
       }

@@ -138,6 +138,16 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
         list.find { it.settingKey == "donation_number" }?.settingValue ?: "01969114300"
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "01969114300")
 
+    val depositMethod: StateFlow<String> = appSettingsList.map { list ->
+        list.find { it.settingKey == "deposit_method" }?.settingValue ?: "bKash"
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "bKash")
+
+    val depositNumber: StateFlow<String> = appSettingsList.map { list ->
+        list.find { it.settingKey == "deposit_number" }?.settingValue
+            ?: list.find { it.settingKey == "donation_number" }?.settingValue
+            ?: "01969114300"
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "01969114300")
+
     val contactNumber: StateFlow<String> = appSettingsList.map { list ->
         list.find { it.settingKey == "contact_number" }?.settingValue ?: "01969114300"
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "01969114300")
@@ -753,13 +763,14 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
         val cleanPass = passwordInput.trim()
 
         // Secure credential validation:
-        // Admin user credentials supported:
-        // User: admin or admin@eblood.org
-        // Password: eblood@2026 or admin123 or Ashik@4300
-        val isValidUser = cleanUser.equals("admin", ignoreCase = true) || 
-                          cleanUser.equals("admin@eblood.org", ignoreCase = true) ||
-                          cleanUser.equals("ashikbillah4300@gmail.com", ignoreCase = true)
-        val isValidPass = cleanPass == "eblood@2026" || cleanPass == "admin123" || cleanPass == "Ashik@4300"
+        // Admin credentials:
+        // Email/User: ashikbillah4300@gmail.com or ashikbillah or admin
+        // Password: ashik@2008 (or previous keys: eblood@2026 / admin123)
+        val isValidUser = cleanUser.equals("ashikbillah4300@gmail.com", ignoreCase = true) || 
+                          cleanUser.equals("ashikbillah", ignoreCase = true) ||
+                          cleanUser.equals("admin", ignoreCase = true) ||
+                          cleanUser.equals("admin@eblood.org", ignoreCase = true)
+        val isValidPass = cleanPass == "ashik@2008" || cleanPass == "eblood@2026" || cleanPass == "admin123" || cleanPass == "Ashik@4300"
 
         if (isValidUser && isValidPass) {
             isAdminLoggedIn.value = true

@@ -3,6 +3,8 @@ const { AppSetting } = require('../models');
 // Default initial settings
 const DEFAULT_SETTINGS = [
   { setting_key: 'donation_number', setting_value: '01969114300', description: 'Personal bKash send money number' },
+  { setting_key: 'deposit_method', setting_value: 'bKash', description: 'Selected Deposit/Payment Gateway (bKash / Nagad / Rocket)' },
+  { setting_key: 'deposit_number', setting_value: '01969114300', description: 'Active deposit account number' },
   { setting_key: 'contact_number', setting_value: '+8801969114300', description: 'Public contact phone' },
   { setting_key: 'support_number', setting_value: '+8801969114300', description: 'Support helpline' },
   { setting_key: 'app_notice', setting_value: 'Welcome to EBloodDonation. Save lives by donating blood regularly!', description: 'General notice banner' },

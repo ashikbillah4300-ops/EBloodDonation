@@ -509,40 +509,6 @@ fun ProfileScreen(viewModel: EBloodViewModel) {
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Admin Portal Access Button
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .clickable {
-                        if (viewModel.isAdminLoggedIn.value) {
-                            viewModel.navigateTo(com.example.ui.viewmodel.Screen.ADMIN_DASHBOARD)
-                        } else {
-                            viewModel.navigateTo(com.example.ui.viewmodel.Screen.ADMIN_LOGIN)
-                        }
-                    }
-                    .testTag("admin_portal_button"),
-                color = Color(0xFF1E1B4B),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF6366F1).copy(alpha = 0.5f))
-            ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = "🛡️", fontSize = 16.sp)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Admin Portal / প্রশাসনিক প্যানেল",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFA5B4FC)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
             // Sign Out Button
             Surface(
                 modifier = Modifier

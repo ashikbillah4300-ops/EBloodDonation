@@ -84,6 +84,8 @@ fun HomeScreen(viewModel: EBloodViewModel) {
     val requests by viewModel.allRequests.collectAsStateWithLifecycle()
     val showSupport by viewModel.showSupportDialog.collectAsStateWithLifecycle()
     val donationNum by viewModel.donationNumber.collectAsStateWithLifecycle()
+    val depositNum by viewModel.depositNumber.collectAsStateWithLifecycle()
+    val depositMeth by viewModel.depositMethod.collectAsStateWithLifecycle()
     val emergencyNoticeText by viewModel.emergencyNotice.collectAsStateWithLifecycle()
     val appNoticeText by viewModel.appNotice.collectAsStateWithLifecycle()
 
@@ -546,11 +548,12 @@ fun HomeScreen(viewModel: EBloodViewModel) {
         }
     }
 
-    // Support Platform Dialog (bKash send money)
+    // Support Platform Dialog (bKash/Nagad/Rocket deposit)
     if (showSupport) {
         SupportDonationDialog(
             onDismiss = { viewModel.showSupportDialog.value = false },
-            donationNumber = donationNum
+            donationNumber = depositNum,
+            depositMethod = depositMeth
         )
     }
 }
@@ -637,10 +640,30 @@ fun HowItWorksStepItem(
 }
 
 @Composable
-fun SupportDonationDialog(onDismiss: () -> Unit, donationNumber: String = "01969114300") {
+fun SupportDonationDialog(
+    onDismiss: () -> Unit,
+    donationNumber: String = "01969114300",
+    depositMethod: String = "bKash"
+) {
     val context = LocalContext.current
     var isBengali by remember { mutableStateOf(true) }
-    val bkashNumber = donationNumber
+    val activeDepositNumber = donationNumber
+    val activeMethodName = if (depositMethod.isNotBlank()) depositMethod else "bKash"
+    val isNagad = activeMethodName.equals("Nagad", ignoreCase = true)
+    val isRocket = activeMethodName.equals("Rocket", ignoreCase = true)
+
+    // Method theme color
+    val methodColor = when {
+        isNagad -> Color(0xFFEA580C)
+        isRocket -> Color(0xFF7C3AED)
+        else -> Color(0xFFE11D48)
+    }
+
+    val methodTitle = when {
+        isNagad -> "Nagad (নগদ)"
+        isRocket -> "Rocket (রকেট)"
+        else -> "bKash (বিকাশ)"
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -678,12 +701,12 @@ fun SupportDonationDialog(onDismiss: () -> Unit, donationNumber: String = "01969
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
             ) {
-                // bKash Send Money Box
+                // Deposit / Donation Number Box
                 Text(
-                    text = "📱 bKash Send Money / বিকাশ অনুদান নম্বর:",
+                    text = "📱 $methodTitle Send Money / অনুদান নম্বর:",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFFF97316)
+                    color = methodColor
                 )
 
                 Spacer(modifier = Modifier.height(6.dp))
@@ -692,7 +715,7 @@ fun SupportDonationDialog(onDismiss: () -> Unit, donationNumber: String = "01969
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(Color(0xFF22111E), RoundedCornerShape(12.dp))
-                        .border(1.dp, Color(0xFFE11D48).copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                        .border(1.dp, methodColor.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
                         .padding(12.dp)
                 ) {
                     Row(
@@ -702,7 +725,7 @@ fun SupportDonationDialog(onDismiss: () -> Unit, donationNumber: String = "01969
                     ) {
                         Column {
                             Text(
-                                text = "bKash (বিকাশ)",
+                                text = methodTitle,
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -713,22 +736,22 @@ fun SupportDonationDialog(onDismiss: () -> Unit, donationNumber: String = "01969
                                 color = TextSecondary
                             )
                             Text(
-                                text = bkashNumber,
+                                text = activeDepositNumber,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Black,
-                                color = Color(0xFFF43F5E)
+                                color = methodColor
                             )
                         }
 
                         Button(
                             onClick = {
                                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                val clip = ClipData.newPlainText("bKash Number", bkashNumber)
+                                val clip = ClipData.newPlainText("$activeMethodName Number", activeDepositNumber)
                                 clipboard.setPrimaryClip(clip)
-                                Toast.makeText(context, "Number Copied: $bkashNumber", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Number Copied: $activeDepositNumber", Toast.LENGTH_SHORT).show()
                             },
                             shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE11D48)),
+                            colors = ButtonDefaults.buttonColors(containerColor = methodColor),
                             modifier = Modifier.testTag("copy_bkash_button")
                         ) {
                             Icon(Icons.Default.ContentCopy, contentDescription = "Copy", modifier = Modifier.size(16.dp))

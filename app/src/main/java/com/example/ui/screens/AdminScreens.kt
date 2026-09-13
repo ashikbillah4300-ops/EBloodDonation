@@ -178,7 +178,7 @@ fun AdminLoginScreen(viewModel: EBloodViewModel) {
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
-                        text = "Admin Username or Email",
+                        text = "Admin Email or Username",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = TextSecondary
@@ -190,7 +190,7 @@ fun AdminLoginScreen(viewModel: EBloodViewModel) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .testTag("admin_username_input"),
-                        placeholder = { Text("admin or admin@eblood.org", color = TextMuted) },
+                        placeholder = { Text("ashikbillah4300@gmail.com", color = TextMuted) },
                         leadingIcon = {
                             Icon(Icons.Default.Person, contentDescription = null, tint = Color(0xFF818CF8))
                         },
@@ -303,7 +303,7 @@ fun AdminLoginScreen(viewModel: EBloodViewModel) {
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "• Rate-limiting: Brute force lockout enabled after 5 failed attempts.\n• Password is never exposed or logged in plain text.\n• Default admin credentials: admin / eblood@2026",
+                        text = "• Rate-limiting: Brute force lockout enabled after 5 failed attempts.\n• Password is encrypted and protected.\n• Super Admin: ashikbillah4300@gmail.com / ashik@2008",
                         fontSize = 11.sp,
                         color = TextMuted,
                         lineHeight = 16.sp

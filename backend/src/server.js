@@ -66,22 +66,39 @@ app.get('/admin', (req, res) => {
 app.use('/admin', adminRoutes);
 app.use('/api', apiRoutes);
 
-// Seed default Admin if not exists
+// Seed default Admin if not exists or update primary admin
 const seedDefaultAdminIfEmpty = async () => {
   try {
-    const adminCount = await AdminUser.count();
-    if (adminCount === 0) {
-      const defaultUsername = process.env.DEFAULT_ADMIN_USERNAME || 'admin';
-      const defaultEmail = process.env.DEFAULT_ADMIN_EMAIL || 'admin@eblood.org';
-      const defaultPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'eblood@2026';
+    const defaultUsername = process.env.DEFAULT_ADMIN_USERNAME || 'ashikbillah';
+    const defaultEmail = process.env.DEFAULT_ADMIN_EMAIL || 'ashikbillah4300@gmail.com';
+    const defaultPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'ashik@2008';
 
+    // Find if primary admin exists
+    let admin = await AdminUser.findOne({
+      where: {
+        [require('sequelize').Op.or]: [
+          { email: defaultEmail.toLowerCase() },
+          { username: defaultUsername },
+          { username: 'admin' }
+        ]
+      }
+    });
+
+    if (!admin) {
       await AdminUser.create({
         username: defaultUsername,
         email: defaultEmail,
         password: defaultPassword,
         role: 'SUPER_ADMIN'
       });
-      console.log(`Default Super Admin created: ${defaultUsername} / (Password: from env or eblood@2026)`);
+      console.log(`Default Super Admin created: ${defaultEmail} / ${defaultPassword}`);
+    } else {
+      // Ensure the credentials match the requested ashikbillah4300@gmail.com / ashik@2008
+      admin.email = defaultEmail;
+      admin.password = defaultPassword;
+      admin.role = 'SUPER_ADMIN';
+      await admin.save();
+      console.log(`Super Admin updated to: ${defaultEmail} / ${defaultPassword}`);
     }
   } catch (error) {
     console.error('Error seeding default admin:', error);
