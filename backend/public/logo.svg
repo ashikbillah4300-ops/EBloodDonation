@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="w-full h-full">
+  <!-- EBloodDonation Official Triple-Node Blood Cell Cluster Logo -->
+  <circle cx="33" cy="30" r="13.5" fill="#E11D48" />
+  <circle cx="53" cy="71" r="15" fill="#E11D48" />
+  <circle cx="73" cy="31" r="13.5" fill="#E11D48" />
+  <!-- Smooth Connecting Bridge -->
+  <path d="M23,34 C27,47 40,58 44,70 C50,68 52,60 46,48 C41,39 36,29 23,34 Z" fill="#E11D48" />
+  <path d="M28,27 C35,42 43,57 50,70 C57,67 54,58 47,46 C40,36 35,24 28,27 Z" fill="#E11D48" />
+</svg>

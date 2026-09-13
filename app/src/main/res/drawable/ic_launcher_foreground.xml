@@ -1,38 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Blood drop shadow -->
+    <!-- EBloodDonation Brand Vector Logo -->
+    <!-- Top-Left Circle (Node 1) -->
     <path
-        android:pathData="M54,26 C54,26 33,52 33,67 C33,78.6 42.4,88 54,88 C65.6,88 75,78.6 75,67 C75,52 54,26 54,26 Z"
-        android:fillColor="#40000000" />
+        android:pathData="M43,36m-9,0a9,9 0 1,0 18,0a9,9 0 1,0 -18,0"
+        android:fillColor="#DC2626" />
 
-    <!-- Main Blood drop with gradient -->
+    <!-- Bottom Center Circle (Node 2) -->
     <path
-        android:pathData="M54,25 C54,25 34,51 34,66 C34,77 43,86 54,86 C65,86 74,77 74,66 C74,51 54,25 54,25 Z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:angle="270"
-                android:endColor="#DC2626"
-                android:startColor="#EF4444"
-                android:type="linear" />
-        </aapt:attr>
-    </path>
+        android:pathData="M56,66m-10.5,0a10.5,10.5 0 1,0 21,0a10.5,10.5 0 1,0 -21,0"
+        android:fillColor="#DC2626" />
 
-    <!-- Glossy inner reflection highlight -->
+    <!-- Smooth Organic Bridge connecting Node 1 and Node 2 -->
     <path
-        android:pathData="M43,62 C43,53 49,42 54,34 C51,40 45,51 46,63 C46.5,68 49,72 52,76 C46,74 43,68 43,62 Z"
-        android:fillColor="#4DFFFFFF" />
+        android:pathData="M38,39 C40,48 48,56 50,65 C54,63 56,58 52,50 C48,42 45,35 38,39 Z"
+        android:fillColor="#DC2626" />
 
-    <!-- Plus / Cross or inner glow -->
+    <!-- Organic filler curve for metabolic smooth connection -->
     <path
-        android:pathData="M51,55 L57,55 M54,52 L54,58"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="2.5"
-        android:strokeLineCap="round" />
+        android:pathData="M37,34 C42,43 47,55 53,64 C58,62 57,56 52,48 C48,41 44,33 37,34 Z"
+        android:fillColor="#DC2626" />
+
+    <!-- Top-Right Standalone Circle (Node 3) -->
+    <path
+        android:pathData="M70,36m-9.5,0a9.5,9.5 0 1,0 19,0a9.5,9.5 0 1,0 -19,0"
+        android:fillColor="#DC2626" />
+
 </vector>
-

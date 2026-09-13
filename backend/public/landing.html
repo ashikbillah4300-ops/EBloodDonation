@@ -28,8 +28,8 @@
   <nav class="border-b border-slate-800/80 backdrop-blur-md sticky top-0 z-50 bg-slate-950/80">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
       <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-600 to-red-500 flex items-center justify-center text-xl shadow-lg shadow-rose-900/40">
-          🩸
+        <div class="w-10 h-10 rounded-xl bg-white p-1.5 flex items-center justify-center shadow-lg shadow-rose-900/40">
+          <img src="/logo.svg" alt="EBlood Donation Logo" class="w-full h-full object-contain">
         </div>
         <div>
           <span class="font-bold text-lg text-white tracking-wide">EBlood Donation</span>
@@ -74,11 +74,6 @@
             </svg>
             <span>Download EBlood APK (Free)</span>
           </button>
-
-          <a href="/api/health" target="_blank" class="w-full sm:w-auto px-6 py-4 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 transition">
-            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span>API Server Status: Active</span>
-          </a>
         </div>
 
         <!-- Verification / Trust Badges -->
@@ -218,15 +213,13 @@
   <!-- Footer -->
   <footer class="border-t border-slate-800 py-10 bg-slate-950 text-center text-xs text-slate-500">
     <div class="max-w-6xl mx-auto px-4 space-y-3">
-      <div class="flex items-center justify-center space-x-2 text-rose-500 font-semibold text-sm">
-        <span>🩸</span>
+      <div class="flex items-center justify-center space-x-2.5 text-rose-500 font-semibold text-sm">
+        <div class="w-6 h-6 rounded-md bg-white p-0.5 flex items-center justify-center shadow-sm">
+          <img src="/logo.svg" alt="EBlood Logo" class="w-full h-full object-contain">
+        </div>
         <span>EBlood Donation Platform</span>
       </div>
       <p>© 2026 EBlood Donation. সকল অধিকার সংরক্ষিত। জীবন রক্ষায় একটি মানবিক প্ল্যাটফর্ম।</p>
-      <div class="pt-2 flex justify-center space-x-6">
-        <a href="/api/health" class="hover:text-slate-300">সার্ভার হেলথ</a>
-        <a href="/api/settings" class="hover:text-slate-300">মোবাইল সেটিংস</a>
-      </div>
     </div>
   </footer>
 

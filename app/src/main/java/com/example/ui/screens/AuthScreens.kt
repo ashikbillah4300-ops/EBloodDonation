@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import android.app.Activity
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -65,6 +66,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -103,15 +105,15 @@ fun SplashScreen() {
             Box(
                 modifier = Modifier
                     .size(110.dp)
-                    .background(CrimsonContainer, CircleShape)
-                    .border(1.5.dp, CrimsonPrimary.copy(alpha = 0.2f), CircleShape),
+                    .background(Color.White, CircleShape)
+                    .border(2.dp, CrimsonPrimary.copy(alpha = 0.2f), CircleShape)
+                    .padding(16.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.Favorite,
-                    contentDescription = "Blood Drop",
-                    tint = CrimsonPrimary,
-                    modifier = Modifier.size(52.dp)
+                Image(
+                    painter = painterResource(id = com.example.R.drawable.ic_eblood_logo),
+                    contentDescription = "EBlood Logo",
+                    modifier = Modifier.size(68.dp)
                 )
             }
 
@@ -172,18 +174,19 @@ fun AuthScreen(viewModel: EBloodViewModel) {
         ) {
             Spacer(modifier = Modifier.height(48.dp))
 
-            // 1. Soft Circular Pink Avatar with Solid Red Heart (Exact screenshot match)
+            // 1. Soft Circular Avatar with Official EBloodDonation Logo
             Box(
                 modifier = Modifier
-                    .size(104.dp)
-                    .background(Color(0xFFFDE8EA), CircleShape),
+                    .size(108.dp)
+                    .background(Color.White, CircleShape)
+                    .border(2.dp, Color(0xFFF3DDE0), CircleShape)
+                    .padding(16.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.Favorite,
-                    contentDescription = "Logo Heart",
-                    tint = Color(0xFFD32F2F),
-                    modifier = Modifier.size(48.dp)
+                Image(
+                    painter = painterResource(id = com.example.R.drawable.ic_eblood_logo),
+                    contentDescription = "EBlood Logo",
+                    modifier = Modifier.size(66.dp)
                 )
             }
 
@@ -662,12 +665,15 @@ fun NameInputScreen(viewModel: EBloodViewModel) {
                 modifier = Modifier
                     .size(80.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFFFFEBEE)),
+                    .background(Color.White)
+                    .border(2.dp, Color(0xFFFFCDD2), CircleShape)
+                    .padding(12.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "🩸",
-                    fontSize = 38.sp
+                Image(
+                    painter = painterResource(id = com.example.R.drawable.ic_eblood_logo),
+                    contentDescription = "EBlood Logo",
+                    modifier = Modifier.size(52.dp)
                 )
             }
 

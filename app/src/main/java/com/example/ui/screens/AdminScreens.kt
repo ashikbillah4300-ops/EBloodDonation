@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -63,6 +64,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -127,20 +129,20 @@ fun AdminLoginScreen(viewModel: EBloodViewModel) {
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Admin Shield Logo
+            // Admin Official Logo
             Box(
                 modifier = Modifier
-                    .size(72.dp)
-                    .background(
-                        Brush.radialGradient(
-                            listOf(Color(0xFF6366F1).copy(alpha = 0.3f), Color.Transparent)
-                        ),
-                        CircleShape
-                    )
-                    .border(2.dp, Color(0xFF6366F1), CircleShape),
+                    .size(80.dp)
+                    .background(Color.White, CircleShape)
+                    .border(2.dp, Color(0xFF6366F1), CircleShape)
+                    .padding(12.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = "🛡️", fontSize = 32.sp)
+                Image(
+                    painter = painterResource(id = com.example.R.drawable.ic_eblood_logo),
+                    contentDescription = "EBlood Logo",
+                    modifier = Modifier.size(54.dp)
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -353,10 +355,16 @@ fun AdminDashboardScreen(viewModel: EBloodViewModel) {
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
-                                .background(Color(0xFF4F46E5), CircleShape),
+                                .background(Color.White, CircleShape)
+                                .border(1.dp, Color(0xFF6366F1), CircleShape)
+                                .padding(5.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(text = "🩸", fontSize = 16.sp)
+                            Image(
+                                painter = painterResource(id = com.example.R.drawable.ic_eblood_logo),
+                                contentDescription = "EBlood Logo",
+                                modifier = Modifier.size(24.dp)
+                            )
                         }
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {

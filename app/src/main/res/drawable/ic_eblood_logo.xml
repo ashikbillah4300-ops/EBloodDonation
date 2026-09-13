@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+
+    <!-- EBloodDonation Official Brand Logo Vector -->
+    <!-- Top-Left Circle (Node 1) -->
+    <path
+        android:pathData="M34,29m-14,0a14,14 0 1,0 28,0a14,14 0 1,0 -28,0"
+        android:fillColor="#DC2626" />
+
+    <!-- Bottom Center Circle (Node 2) -->
+    <path
+        android:pathData="M54,73m-15.5,0a15.5,15.5 0 1,0 31,0a15.5,15.5 0 1,0 -31,0"
+        android:fillColor="#DC2626" />
+
+    <!-- Organic Stem / Bridge connecting Node 1 and Node 2 -->
+    <path
+        android:pathData="M24,33 C28,47 41,58 45,71 C51,69 53,61 47,49 C42,39 37,29 24,33 Z"
+        android:fillColor="#DC2626" />
+
+    <path
+        android:pathData="M29,26 C36,41 44,57 51,71 C58,68 55,59 48,47 C41,37 36,25 29,26 Z"
+        android:fillColor="#DC2626" />
+
+    <!-- Top-Right Standalone Circle (Node 3) -->
+    <path
+        android:pathData="M76,30m-14,0a14,14 0 1,0 28,0a14,14 0 1,0 -28,0"
+        android:fillColor="#DC2626" />
+
+</vector>
