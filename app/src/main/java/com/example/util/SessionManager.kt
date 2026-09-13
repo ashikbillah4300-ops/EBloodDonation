@@ -17,7 +17,7 @@ class SessionManager(context: Context) {
         private const val KEY_ADDRESS = "key_address"
         private const val KEY_BACKEND_URL = "key_backend_url"
         private const val KEY_BACKEND_TOKEN = "key_backend_token"
-        const val DEFAULT_BACKEND_URL = "https://eblood-donation-backend.onrender.com"
+        const val DEFAULT_BACKEND_URL = "https://eblooddonation.onrender.com"
     }
 
     fun saveSession(

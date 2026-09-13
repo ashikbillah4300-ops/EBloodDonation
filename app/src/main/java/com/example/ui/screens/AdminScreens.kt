@@ -1507,7 +1507,7 @@ fun AdminOnlineBackendSyncTab(viewModel: EBloodViewModel) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     val presets = listOf(
-                        "🚀 Render Cloud" to "https://eblood-donation-backend.onrender.com",
+                        "🚀 Render Cloud" to "https://eblooddonation.onrender.com",
                         "💻 Android Emulator" to "http://10.0.2.2:5000",
                         "🏠 Localhost" to "http://localhost:5000"
                     )
