@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: eblood-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node src/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DEFAULT_ADMIN_USERNAME
+        value: admin
+      - key: DEFAULT_ADMIN_PASSWORD
+        value: eblood@2026
+      # Add DATABASE_URL from Neon.tech, Supabase or Render Postgres
+      - key: DATABASE_URL
+        sync: false

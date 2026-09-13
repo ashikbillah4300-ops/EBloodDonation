@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Blood drop shadow -->
+    <path
+        android:pathData="M54,26 C54,26 33,52 33,67 C33,78.6 42.4,88 54,88 C65.6,88 75,78.6 75,67 C75,52 54,26 54,26 Z"
+        android:fillColor="#40000000" />
+
+    <!-- Main Blood drop with gradient -->
+    <path
+        android:pathData="M54,25 C54,25 34,51 34,66 C34,77 43,86 54,86 C65,86 74,77 74,66 C74,51 54,25 54,25 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:angle="270"
+                android:endColor="#DC2626"
+                android:startColor="#EF4444"
+                android:type="linear" />
+        </aapt:attr>
+    </path>
+
+    <!-- Glossy inner reflection highlight -->
+    <path
+        android:pathData="M43,62 C43,53 49,42 54,34 C51,40 45,51 46,63 C46.5,68 49,72 52,76 C46,74 43,68 43,62 Z"
+        android:fillColor="#4DFFFFFF" />
+
+    <!-- Plus / Cross or inner glow -->
+    <path
+        android:pathData="M51,55 L57,55 M54,52 L54,58"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round" />
+</vector>
+
