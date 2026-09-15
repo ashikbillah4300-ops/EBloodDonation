@@ -20,9 +20,18 @@ app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 app.use(express.static(path.join(__dirname, '../public')));
 app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
-// Serve Landing & APK Download Page on Root (/)
+// Serve Public Home Page on Root (/) - NO password required
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/landing.html'));
+  res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+
+// Serve Admin Control Panel on /admin and /admin-panel - ALWAYS requires password
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/admin.html'));
+});
+
+app.get('/admin-panel', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/admin.html'));
 });
 
 // APK Download Route
@@ -58,12 +67,6 @@ app.get('/download/eblood.apk', (req, res) => {
       </html>
     `);
   }
-});
-
-// Serve Admin Panel Web Dashboard statically
-app.use('/admin-panel', express.static(path.join(__dirname, '../public')));
-app.get('/admin', (req, res) => {
-  res.redirect('/admin-panel');
 });
 
 // Routes

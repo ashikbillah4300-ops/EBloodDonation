@@ -1,1213 +1,424 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EBloodDonation — Secure Admin Panel</title>
+  <title id="web-page-title">EBlood Donation — রক্তদান ও সেবা প্ল্যাটফর্ম</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Inter', sans-serif; }
-    .bg-crimson { background-color: #E11D48; }
-    .border-crimson { border-color: #E11D48; }
-    .text-crimson { color: #E11D48; }
+    body { font-family: 'Hind Siliguri', 'Inter', sans-serif; }
+    .hero-glow {
+      background: radial-gradient(circle at 50% 20%, rgba(225, 29, 72, 0.25) 0%, rgba(15, 23, 42, 0) 70%);
+    }
+    .pulse-btn {
+      box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.7);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.7); }
+      70% { box-shadow: 0 0 0 16px rgba(225, 29, 72, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); }
+    }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen">
+<body class="bg-slate-950 text-slate-100 min-h-screen hero-glow selection:bg-rose-500 selection:text-white">
 
-  <!-- ================= AUTHENTICATION MODAL / SCREEN ================= -->
-  <div id="loginSection" class="flex min-h-screen items-center justify-center p-4 bg-slate-950">
-    <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
-      <div class="flex items-center justify-center mb-6">
-        <div class="w-16 h-16 rounded-2xl bg-white p-2.5 flex items-center justify-center shadow-lg shadow-rose-900/30">
-          <img src="/logo.svg" alt="EBlood Donation" class="app-brand-logo w-full h-full object-contain">
-        </div>
+  <!-- Maintenance Mode Overlay (Controlled via Website Control) -->
+  <div id="web-maintenance-overlay" class="hidden fixed inset-0 z-50 bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
+    <div class="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-4">
+      <div class="w-16 h-16 mx-auto bg-amber-500/20 text-amber-400 rounded-2xl flex items-center justify-center text-3xl">
+        🚧
       </div>
-      <h2 class="text-2xl font-black text-center text-white tracking-tight">EBlood Admin Portal</h2>
-      <p class="text-xs text-center text-slate-400 mt-1 mb-6">Secure Cloud Management System • PostgreSQL</p>
-
-      <div id="loginAlert" class="hidden mb-4 p-3 rounded-lg text-xs font-semibold bg-rose-950/80 border border-rose-800 text-rose-300"></div>
-
-      <form id="loginForm" class="space-y-4">
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">Super Admin Email / Username</label>
-          <input type="text" id="loginUsername" required class="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition" placeholder="ashikbillah4300@gmail.com">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">Password</label>
-          <input type="password" id="loginPassword" required class="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition" placeholder="••••••••••••">
-        </div>
-        <button type="submit" id="loginBtn" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white text-sm font-bold shadow-lg shadow-rose-900/20 transition">
-          Sign In to Dashboard
-        </button>
-      </form>
-
-      <div class="mt-6 pt-4 border-t border-slate-800 text-center">
-        <span class="inline-flex items-center text-[11px] text-slate-500 font-medium">
-          <svg class="w-3.5 h-3.5 mr-1 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
-          256-bit Token Encryption Active
-        </span>
+      <h2 class="text-2xl font-black text-white">ওয়েবসাইট মেইন্টেন্যান্স চলছে</h2>
+      <p class="text-slate-400 text-sm leading-relaxed" id="web-maintenance-msg">
+        আমাদের প্ল্যাটফর্মে সাময়িক আপগ্রেড ও নিরাপত্তা রক্ষণাবেক্ষণের কাজ চলছে। খুব শীঘ্রই আমরা অনলাইনে ফিরে আসছি।
+      </p>
+      <div class="pt-2 text-xs text-rose-400 font-semibold" id="web-maintenance-hotline">
+        জরুরি প্রয়োজনে হটলাইন: +8801969114300
       </div>
     </div>
   </div>
 
-  <!-- ================= ADMIN DASHBOARD LAYOUT ================= -->
-  <div id="dashboardSection" class="hidden min-h-screen flex flex-col md:flex-row">
-    <!-- Sidebar Navigation -->
-    <aside class="w-full md:w-64 bg-slate-900 border-r border-slate-800 p-5 flex flex-col justify-between">
-      <div>
-        <!-- Logo -->
-        <div class="flex items-center space-x-3 mb-8">
-          <div class="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center shadow-md shadow-rose-600/30">
-            <img src="/logo.svg" alt="EBlood Admin" class="app-brand-logo w-full h-full object-contain">
-          </div>
-          <div>
-            <h1 class="text-sm font-black text-white tracking-wide">EBlood Admin</h1>
-            <p class="text-[10px] text-emerald-400 font-semibold uppercase tracking-wider">● Live Synchronized</p>
-          </div>
+  <!-- Navbar -->
+  <nav class="border-b border-slate-800/80 backdrop-blur-md sticky top-0 z-40 bg-slate-950/80">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-white p-1.5 flex items-center justify-center shadow-lg shadow-rose-900/40">
+          <img src="/logo.svg" alt="EBlood Donation Logo" class="app-brand-logo w-full h-full object-contain">
         </div>
-
-        <!-- Nav Links -->
-        <nav class="space-y-1.5" id="navLinks">
-          <!-- 1st SECTION: App Control (Requested by user) -->
-          <div class="pt-0.5 pb-1">
-            <p class="text-[10px] font-black text-rose-400 uppercase tracking-wider px-3 mb-1 flex items-center gap-1.5">
-              <span>📱</span> <span>১ম সেকশন: অ্যাপ কন্ট্রোল</span>
-            </p>
-            <button onclick="switchTab('app-control')" id="nav-app-control" class="nav-item active w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-rose-600 text-white shadow-md shadow-rose-900/30 transition">
-              <span class="text-base">📱</span>
-              <div class="text-left">
-                <span class="block">App Control</span>
-                <span class="text-[10px] font-normal opacity-90">অ্যাপের লোগো, নোটিশ ও কন্ট্রোল</span>
-              </div>
-            </button>
-          </div>
-
-          <!-- 2nd SECTION: Website Control (Requested by user) -->
-          <div class="pt-1 pb-2 border-b border-slate-800/80">
-            <p class="text-[10px] font-black text-sky-400 uppercase tracking-wider px-3 mb-1 flex items-center gap-1.5">
-              <span>🌐</span> <span>২য় সেকশন: ওয়েবসাইট কন্ট্রোল</span>
-            </p>
-            <button onclick="switchTab('website-control')" id="nav-website-control" class="nav-item w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition">
-              <span class="text-base">🌐</span>
-              <div class="text-left">
-                <span class="block">Website Control</span>
-                <span class="text-[10px] text-slate-400">ওয়েবসাইট কনটেন্ট ও ডিরেক্টরি</span>
-              </div>
-            </button>
-          </div>
-
-          <!-- System & Management Links -->
-          <div class="pt-1">
-            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-1.5">সিস্টেম ও ডেটাবেজ</p>
-            <button onclick="switchTab('overview')" id="nav-overview" class="nav-item w-full flex items-center space-x-3 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition">
-              <span>📊</span>
-              <span>Live Dashboard</span>
-            </button>
-            <button onclick="switchTab('users')" id="nav-users" class="nav-item w-full flex items-center space-x-3 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition">
-              <span>👥</span>
-              <span>User Management</span>
-            </button>
-            <button onclick="switchTab('requests')" id="nav-requests" class="nav-item w-full flex items-center space-x-3 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition">
-              <span>🩸</span>
-              <span>Blood Requests</span>
-            </button>
-            <button onclick="switchTab('architecture')" id="nav-architecture" class="nav-item w-full flex items-center space-x-3 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition">
-              <span>🔄</span>
-              <span>API & Architecture</span>
-            </button>
-          </div>
-        </nav>
-      </div>
-
-      <!-- User Info & Logout -->
-      <div class="pt-6 border-t border-slate-800 mt-6">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-xs font-bold text-white" id="adminUserName">Admin</p>
-            <p class="text-[10px] text-slate-400">Super Administrator</p>
-          </div>
-          <button onclick="logout()" title="Sign Out" class="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition">
-            🚪
-          </button>
+        <div>
+          <span id="web-brand-name" class="font-bold text-lg text-white tracking-wide">EBlood Donation</span>
+          <span id="web-version-badge" class="hidden sm:inline-block ml-2 px-2 py-0.5 text-[10px] font-semibold bg-rose-900/40 border border-rose-700/50 text-rose-300 rounded-full">v1.0 Live</span>
         </div>
       </div>
-    </aside>
-
-    <!-- Main Content Area -->
-    <main class="flex-1 p-6 md:p-8 overflow-y-auto bg-slate-950">
-      <!-- Toast Notification -->
-      <div id="toast" class="fixed top-5 right-5 z-50 hidden bg-emerald-900 border border-emerald-700 text-emerald-100 text-xs font-bold px-4 py-3 rounded-xl shadow-2xl transition">
-        Saved successfully
+      <div class="flex items-center space-x-3">
+        <a id="web-helpline-link" href="tel:+8801969114300" class="hidden md:flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 transition">
+          <span>📞</span>
+          <span id="web-helpline-text">হটলাইন: +8801969114300</span>
+        </a>
+        <a href="/admin" class="text-xs sm:text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white px-3.5 py-2 rounded-xl border border-slate-800 transition flex items-center gap-1.5" title="এডমিন কন্ট্রোল প্যানেল">
+          <span>🛡️</span>
+          <span>এডমিন প্যানেল</span>
+        </a>
+        <a href="#download" class="text-xs sm:text-sm font-bold bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-xl shadow-md shadow-rose-900/30 transition">
+          ডাউনলোড APK
+        </a>
       </div>
+    </div>
+  </nav>
 
-      <!-- TAB 1: OVERVIEW DASHBOARD -->
-      <section id="tab-overview" class="space-y-6">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h2 class="text-2xl font-black tracking-tight text-white">System Dashboard</h2>
-            <p class="text-xs text-slate-400">Real-time statistics of users, blood requests and donation metrics</p>
-          </div>
-          <button onclick="fetchStats()" class="inline-flex items-center px-3.5 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-white rounded-xl border border-slate-700 transition">
-            🔄 Refresh Data
+  <!-- Hero Section -->
+  <header class="max-w-6xl mx-auto px-4 sm:px-6 pt-12 pb-16 lg:pt-20 lg:pb-24">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+      
+      <!-- Left Content -->
+      <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-rose-950/70 border border-rose-800/60 text-rose-300 text-xs font-semibold">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span id="web-announcement-text">জরুরি রক্তদান ও তাৎক্ষণিক ডোনার খোঁজার নির্ভরযোগ্য প্ল্যাটফর্ম</span>
+        </div>
+
+        <h1 id="web-hero-title" class="text-3xl sm:text-5xl lg:text-6xl font-black text-white leading-tight tracking-tight">
+          এক ক্লিকেই রক্তদাতা খুঁজুন, <br class="hidden sm:inline">
+          <span class="text-transparent bg-clip-text bg-gradient-to-r from-rose-500 via-red-400 to-amber-400">
+            বাঁচান একটি মূল্যবান জীবন
+          </span>
+        </h1>
+
+        <p id="web-hero-subtitle" class="text-slate-300 text-base sm:text-lg max-w-xl mx-auto lg:mx-0 leading-relaxed font-normal">
+          আপনার এরিয়ার ভেরিফায়েড রক্তদাতা, রিয়েল-টাইম ব্লাড রিকোয়েস্ট, লাইভ হসপিটাল ডিরেক্টরি এবং ২৪/৭ জরুরি হটলাইন সার্ভিস — সবই এখন একটি প্ল্যাটফর্মে।
+        </p>
+
+        <!-- CTA Buttons -->
+        <div id="download" class="pt-4 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+          <button onclick="triggerDownload()" class="pulse-btn w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 hover:from-rose-500 hover:to-red-500 text-white rounded-2xl font-bold text-base shadow-xl shadow-rose-900/40 flex items-center justify-center gap-3 transition transform hover:-translate-y-0.5 active:translate-y-0">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+            </svg>
+            <span id="web-download-btn-text">Download EBlood APK (Free)</span>
           </button>
         </div>
 
-        <!-- Metric Cards -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-            <p class="text-xs text-slate-400 font-medium">Total Registered Users</p>
-            <h3 class="text-2xl font-black text-white mt-1" id="statUsers">--</h3>
-            <span class="text-[10px] text-indigo-400 font-semibold">Live Database</span>
+        <!-- Verification / Trust Badges -->
+        <div class="pt-3 flex items-center justify-center lg:justify-start gap-6 text-xs text-slate-400">
+          <div class="flex items-center gap-1.5">
+            <svg class="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            <span>নিরাপদ ও ভাইরাস মুক্ত</span>
           </div>
-          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-            <p class="text-xs text-slate-400 font-medium">Available Donors</p>
-            <h3 class="text-2xl font-black text-emerald-400 mt-1" id="statDonors">--</h3>
-            <span class="text-[10px] text-emerald-500 font-semibold">Ready for calls</span>
+          <div class="flex items-center gap-1.5">
+            <svg class="w-4 h-4 text-sky-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z"></path></svg>
+            <span>অ্যান্ড্রয়েড 7.0+ সাপোর্ট</span>
           </div>
-          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-            <p class="text-xs text-slate-400 font-medium">Total Blood Requests</p>
-            <h3 class="text-2xl font-black text-sky-400 mt-1" id="statRequests">--</h3>
-            <span class="text-[10px] text-sky-500 font-semibold" id="statPendingReq">0 Pending</span>
-          </div>
-          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-            <p class="text-xs text-slate-400 font-medium">Donations Completed</p>
-            <h3 class="text-2xl font-black text-rose-400 mt-1" id="statDonations">--</h3>
-            <span class="text-[10px] text-rose-500 font-semibold">Lives impacted</span>
+          <div class="flex items-center gap-1.5">
+            <span class="text-amber-400 font-bold">★ 4.9</span>
+            <span>ব্যবহারকারী রেটিং</span>
           </div>
         </div>
 
-        <!-- APP CONDITION & HEALTH STATUS (Requested by User) -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-            <div class="flex items-center space-x-2.5">
-              <span class="text-xl">🩺</span>
-              <div>
-                <h4 class="text-sm font-black text-white">App Condition & System Health</h4>
-                <p class="text-[11px] text-slate-400">Live health state of servers, cloud database, memory, and maintenance</p>
-              </div>
-            </div>
-            <span id="condStatusBadge" class="px-3 py-1 rounded-full text-xs font-black bg-emerald-950 text-emerald-300 border border-emerald-800/50">
-              ● HEALTHY
-            </span>
-          </div>
+      </div>
 
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-            <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80">
-              <p class="text-slate-400 text-[10px] font-medium">Database State</p>
-              <p class="font-bold text-emerald-400 text-xs mt-1" id="condDb">PostgreSQL Online</p>
-              <span class="text-[9px] text-slate-500">Connected & Synced</span>
+      <!-- Right Mockup / Feature Showcase -->
+      <div class="lg:col-span-5 flex justify-center">
+        <div class="relative w-72 sm:w-80">
+          <!-- Ambient Light Glow behind mockup -->
+          <div class="absolute -inset-1.5 bg-gradient-to-tr from-rose-600/40 to-indigo-600/30 rounded-[42px] blur-2xl opacity-75"></div>
+          
+          <!-- Mock Phone Container -->
+          <div class="relative bg-slate-900 border-4 border-slate-700/80 rounded-[40px] p-3 shadow-2xl overflow-hidden">
+            <!-- Camera Notch -->
+            <div class="w-24 h-4 bg-slate-800 mx-auto rounded-full mb-3 flex items-center justify-center">
+              <div class="w-2.5 h-2.5 rounded-full bg-slate-900"></div>
             </div>
-            <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80">
-              <p class="text-slate-400 text-[10px] font-medium">Server Uptime</p>
-              <p class="font-bold text-white text-xs mt-1" id="condUptime">-- min</p>
-              <span class="text-[9px] text-slate-500">Continuous operation</span>
-            </div>
-            <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80">
-              <p class="text-slate-400 text-[10px] font-medium">RAM Memory Heap</p>
-              <p class="font-bold text-sky-400 text-xs mt-1" id="condMemory">-- MB</p>
-              <span class="text-[9px] text-slate-500">Node.js process</span>
-            </div>
-            <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80">
-              <p class="text-slate-400 text-[10px] font-medium">App Maintenance Mode</p>
-              <p class="font-bold text-xs mt-1" id="condMaintenance">OFF (Live)</p>
-              <span class="text-[9px] text-slate-500">Mobile accessibility</span>
+
+            <!-- Phone Screen Content Preview -->
+            <div class="bg-slate-950 rounded-[28px] p-4 text-left space-y-3.5 border border-slate-800">
+              <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
+                <div>
+                  <div class="text-[10px] text-slate-400">বর্তমান অবস্থান</div>
+                  <div class="text-xs font-bold text-white flex items-center gap-1">
+                    <span>📍 ঢাকা, বাংলাদেশ</span>
+                  </div>
+                </div>
+                <div class="w-7 h-7 rounded-full bg-rose-600/20 text-rose-400 flex items-center justify-center text-xs font-bold">
+                  B+
+                </div>
+              </div>
+
+              <!-- Blood Search Card inside phone -->
+              <div class="bg-gradient-to-r from-rose-950 to-slate-900 border border-rose-800/50 rounded-xl p-3">
+                <div class="text-[11px] font-bold text-rose-200">জরুরি রক্তের আবেদন</div>
+                <div class="text-[10px] text-slate-400 mt-0.5">ঢাকা মেডিকেল কলেজ • O+ (২ ব্যাগ)</div>
+                <div class="mt-2.5 flex items-center justify-between">
+                  <span class="text-[9px] px-2 py-0.5 rounded bg-rose-600 text-white font-bold">Critical Urgent</span>
+                  <span class="text-[9px] text-slate-400">১০ মিনিট আগে</span>
+                </div>
+              </div>
+
+              <!-- Donor Quick Tags inside phone -->
+              <div>
+                <div class="text-[10px] font-semibold text-slate-400 mb-1.5">নিকটস্থ রক্তদাতাদের গ্রুপ:</div>
+                <div class="grid grid-cols-4 gap-1.5 text-center">
+                  <span class="bg-slate-800 border border-slate-700 py-1 rounded text-[10px] font-bold text-rose-400">A+</span>
+                  <span class="bg-slate-800 border border-slate-700 py-1 rounded text-[10px] font-bold text-rose-400">A-</span>
+                  <span class="bg-rose-600/20 border border-rose-500 py-1 rounded text-[10px] font-bold text-rose-300">B+</span>
+                  <span class="bg-slate-800 border border-slate-700 py-1 rounded text-[10px] font-bold text-rose-400">B-</span>
+                  <span class="bg-rose-600/20 border border-rose-500 py-1 rounded text-[10px] font-bold text-rose-300">O+</span>
+                  <span class="bg-slate-800 border border-slate-700 py-1 rounded text-[10px] font-bold text-rose-400">O-</span>
+                  <span class="bg-slate-800 border border-slate-700 py-1 rounded text-[10px] font-bold text-rose-400">AB+</span>
+                  <span class="bg-slate-800 border border-slate-700 py-1 rounded text-[10px] font-bold text-rose-400">AB-</span>
+                </div>
+              </div>
+
+              <!-- Bottom CTA inside phone -->
+              <div class="pt-1">
+                <div class="w-full py-2 bg-rose-600 rounded-xl text-center text-white text-[11px] font-bold shadow">
+                  📞 কল করুন / যোগাযোগ
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Quick Live Dynamic Deposit & bKash Info Box -->
-        <div class="bg-gradient-to-r from-rose-950/50 via-slate-900 to-indigo-950/50 border border-rose-900/40 rounded-2xl p-6">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-3 mb-2">
-              <span class="text-xl">💳</span>
-              <div>
-                <h4 class="text-sm font-black text-white">App Deposit Number & Gateway</h4>
-                <p class="text-[11px] text-slate-400">Configured deposit/donation number appearing in mobile application</p>
-              </div>
-            </div>
-            <span id="currentDepositMethodBadge" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-900/50 text-rose-300 border border-rose-800">
-              bKash (বিকাশ)
-            </span>
+    </div>
+  </header>
+
+  <!-- Key App Features Section -->
+  <section class="border-t border-slate-800/80 bg-slate-900/40 py-16">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6">
+      
+      <div class="text-center max-w-2xl mx-auto mb-12">
+        <h2 class="text-2xl sm:text-3xl font-bold text-white">অ্যাপটির বিশেষ সুবিধাসমূহ</h2>
+        <p class="text-sm text-slate-400 mt-2">জরুরি সময়ে রক্তদান ও পাওয়ার প্রক্রিয়াকে সহজ ও নির্ভরযোগ্য করতে বিশেষ ফিচার</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Feature 1 -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-rose-900/50 transition">
+          <div class="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-2xl mb-4">
+            ⚡
           </div>
-
-          <div class="mt-2 flex flex-col sm:flex-row sm:items-baseline gap-3">
-            <p class="text-3xl font-black text-rose-400 tracking-wider" id="currentDonationNumDisplay">01969114300</p>
-            <span class="text-xs text-slate-400">Personal Send Money Account</span>
-          </div>
-
-          <p class="text-xs text-slate-400 mt-2">
-            This deposit number is instantly synced to all users' Android phones. To change the gateway (bKash/Nagad/Rocket) or update the number, visit the
-            <button onclick="switchTab('settings')" class="underline text-indigo-400 hover:text-indigo-300 font-semibold">Deposit & App Settings</button> tab.
+          <h3 class="text-lg font-bold text-white mb-2">তাৎক্ষণিক রক্তদাতা অনুসন্ধান</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            রক্তের গ্রুপ ও বিভাগ/জেলা ফিল্টার করে মুহূর্তেই আশপাশের ভেরিফায়েড রক্তদাতাদের খুঁজে সরাসরি যোগাযোগ করুন।
           </p>
         </div>
-      </section>
 
-      <!-- TAB 2: USER MANAGEMENT -->
-      <section id="tab-users" class="hidden space-y-6">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h2 class="text-2xl font-black tracking-tight text-white">User Management</h2>
-            <p class="text-xs text-slate-400">Search, filter and control user status (Disable / Enable / Delete)</p>
+        <!-- Feature 2 -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-rose-900/50 transition">
+          <div class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-2xl mb-4">
+            📢
           </div>
-          <div class="flex items-center space-x-2">
-            <input type="text" id="userSearch" oninput="debounceFetchUsers()" placeholder="Search name, mobile or city..." class="px-3.5 py-2 text-xs rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-rose-500">
-            <select id="userBloodFilter" onchange="fetchUsers()" class="px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none">
-              <option value="ALL">All Blood Groups</option>
-              <option value="A+">A+</option>
-              <option value="A-">A-</option>
-              <option value="B+">B+</option>
-              <option value="B-">B-</option>
-              <option value="AB+">AB+</option>
-              <option value="AB-">AB-</option>
-              <option value="O+">O+</option>
-              <option value="O-">O-</option>
-            </select>
-          </div>
+          <h3 class="text-lg font-bold text-white mb-2">জরুরি রক্তের পোস্ট ও অ্যালার্ট</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            জরুরি রক্তের প্রয়োজন হলে মুহূর্তের মধ্যে রিকোয়েস্ট পোস্ট করুন এবং সব রক্তদাতার কাছে নোটিফিকেশন পৌঁছে দিন।
+          </p>
         </div>
 
-        <!-- Users Table -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs text-slate-300">
-              <thead class="bg-slate-800/80 text-slate-400 uppercase font-semibold text-[10px] tracking-wider">
-                <tr>
-                  <th class="p-4">Name</th>
-                  <th class="p-4">Mobile</th>
-                  <th class="p-4">Blood Group</th>
-                  <th class="p-4">Location</th>
-                  <th class="p-4">Status</th>
-                  <th class="p-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody id="userTableBody" class="divide-y divide-slate-800 font-medium">
-                <tr><td colspan="6" class="p-4 text-center text-slate-500">Loading users...</td></tr>
-              </tbody>
-            </table>
+        <!-- Feature 3 -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-rose-900/50 transition">
+          <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-2xl mb-4">
+            ☁️
           </div>
-        </div>
-      </section>
-
-      <!-- TAB 3: BLOOD REQUESTS -->
-      <section id="tab-requests" class="hidden space-y-6">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h2 class="text-2xl font-black tracking-tight text-white">Blood Requests</h2>
-            <p class="text-xs text-slate-400">Review patient SOS requests and update status</p>
-          </div>
-          <div>
-            <select id="requestStatusFilter" onchange="fetchRequests()" class="px-3.5 py-2 text-xs rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none">
-              <option value="ALL">All Statuses</option>
-              <option value="PENDING">PENDING</option>
-              <option value="ACTIVE">ACTIVE</option>
-              <option value="COMPLETED">COMPLETED</option>
-              <option value="CANCELLED">CANCELLED</option>
-            </select>
-          </div>
+          <h3 class="text-lg font-bold text-white mb-2">ক্লাউড ডাটাবেজ ব্যাকআপ</h3>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            Neon PostgreSQL ক্লাউডের মাধ্যমে সকল রক্তদাতা ও রিকোয়েস্টের তথ্য ২৪/৭ নিরাপদে সংরক্ষিত এবং স্বয়ংক্রিয় সিঙ্ক হয়।
+          </p>
         </div>
 
-        <!-- Requests Grid -->
-        <div id="requestsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <p class="text-slate-500 text-xs">Loading requests...</p>
-        </div>
-      </section>
+      </div>
 
-      <!-- ========================================== -->
-      <!-- SECTION 1: 📱 MOBILE APP CONTROL CENTER    -->
-      <!-- ========================================== -->
-      <section id="tab-app-control" class="space-y-6">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
-          <div>
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-950/70 border border-rose-800/60 text-rose-300 text-[11px] font-bold mb-1">
-              <span>📱</span>
-              <span>১ম সেকশন: মোবাইল অ্যাপ কন্ট্রোল</span>
-            </div>
-            <h2 class="text-2xl font-black tracking-tight text-white">Mobile App Control Center</h2>
-            <p class="text-xs text-slate-400">অ্যান্ড্রয়েড অ্যাপের ব্র্যান্ডিং, লোগো, ডিপোজিট গেটওয়ে, জরুরি নোটিশ ও সিস্টেম কন্ট্রোল</p>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-emerald-400 font-bold flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-              <span>App Sync Live</span>
-            </span>
-          </div>
-        </div>
+    </div>
+  </section>
 
-        <form id="appControlForm" class="space-y-6 max-w-3xl">
-          <!-- 1. LOGO UPLOAD & BRANDING -->
-          <div class="p-5 rounded-2xl bg-gradient-to-br from-indigo-950/40 via-slate-900 to-slate-900 border border-indigo-700/60 space-y-4">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center space-x-2.5">
-                <span class="text-2xl">🎨</span>
-                <div>
-                  <h3 class="text-sm font-black text-indigo-300">App Logo & Branding / অ্যাপের লোগো ও নাম</h3>
-                  <p class="text-[11px] text-slate-300">এখানে লোগো পরিবর্তন করলে অ্যান্ড্রয়েড অ্যাপের স্প্ল্যাশ স্ক্রিন ও হেডার স্বয়ংক্রিয়ভাবে আপডেট হবে।</p>
-                </div>
-              </div>
-              <span class="px-2.5 py-0.5 text-[10px] font-bold bg-indigo-900/60 text-indigo-300 rounded-full border border-indigo-700/50">Auto Sync</span>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center pt-1">
-              <!-- Current Logo Preview -->
-              <div class="sm:col-span-4 flex flex-col items-center justify-center p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl text-center">
-                <p class="text-[10px] font-semibold text-slate-400 mb-1.5">বর্তমান সক্রিয় লোগো</p>
-                <div class="w-20 h-20 rounded-xl bg-white p-2.5 flex items-center justify-center shadow-lg border border-slate-700">
-                  <img id="currentLogoPreview" src="/logo.svg" alt="Active Logo" class="app-brand-logo w-full h-full object-contain">
-                </div>
-                <p id="currentLogoUrlText" class="text-[9px] text-slate-500 font-mono mt-1.5 max-w-[140px] truncate">/logo.svg</p>
-              </div>
-
-              <!-- Upload Controls -->
-              <div class="sm:col-span-8 space-y-2.5">
-                <div>
-                  <label class="block text-xs font-semibold text-slate-200 mb-1">
-                    📁 নতুন লোগো ফাইল আপলোড করুন (PNG, JPG, SVG, WebP)
-                  </label>
-                  <input type="file" id="logoFileInput" accept="image/png, image/jpeg, image/svg+xml, image/webp" class="block w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-rose-600 file:text-white hover:file:bg-rose-500 file:cursor-pointer bg-slate-800/90 border border-slate-700 rounded-xl p-1">
-                  <p class="text-[10px] text-slate-400 mt-1">সুপারিশ: স্বচ্ছ ব্যাকগ্রাউন্ড (Transparent PNG/SVG) বা স্কয়ার সাইজ</p>
-                </div>
-
-                <div>
-                  <label class="block text-xs font-semibold text-slate-300 mb-1">অথবা লোগোর ইমেজ লিঙ্ক দিন (Direct Image URL)</label>
-                  <input type="url" id="logoUrlInput" class="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs font-mono placeholder-slate-500" placeholder="https://domain.com/logo.png">
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="flex items-center gap-2 pt-1">
-                  <button type="button" onclick="uploadNewLogo()" id="uploadLogoBtn" class="flex-1 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-md shadow-rose-900/30 flex items-center justify-center space-x-1.5 transition">
-                    <span>📤 লোগো আপলোড ও সেট করুন</span>
-                  </button>
-                  <button type="button" onclick="resetToDefaultLogo()" id="resetLogoBtn" title="Reset to original default logo" class="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition">
-                    <span>🔄 ডিফল্ট</span>
-                  </button>
-                </div>
-
-                <div id="logoFeedback" class="hidden p-2 rounded-lg text-xs font-medium"></div>
-              </div>
-            </div>
-
-            <!-- App Name in App Control -->
-            <div class="pt-2 border-t border-slate-800/80">
-              <label class="block text-xs font-semibold text-slate-300 mb-1">অ্যান্ড্রয়েড অ্যাপের প্রদর্শিত নাম (App Display Name)</label>
-              <input type="text" id="setting_app_name" class="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-bold focus:outline-none focus:border-indigo-500" placeholder="EBlood Donation">
-            </div>
-          </div>
-
-          <!-- 2. DEPOSIT GATEWAY & DONATION NUMBERS -->
-          <div class="p-5 rounded-2xl bg-gradient-to-br from-rose-950/40 to-slate-900 border border-rose-900/60 space-y-4">
-            <div class="flex items-center space-x-2">
-              <span class="text-xl">💳</span>
-              <div>
-                <label class="block text-sm font-black text-rose-300">Deposit Gateway & Number (বিকাশ / নগদ / রকেট)</label>
-                <p class="text-[11px] text-slate-400">অ্যাপে ইউজার ডিপোজিট বা ডোনেশন বাটনে ক্লিক করলে এখানে সেট করা গেটওয়ে ও নম্বরটি প্রদর্শিত হবে।</p>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">ডিপোজিট মেথড (Payment Gateway)</label>
-                <select id="setting_deposit_method" onchange="onDepositMethodChange()" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-bold focus:outline-none focus:border-rose-500">
-                  <option value="bKash">bKash (বিকাশ Personal)</option>
-                  <option value="Nagad">Nagad (নগদ Personal)</option>
-                  <option value="Rocket">Rocket (রকেট Personal)</option>
-                </select>
-              </div>
-
-              <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">ডিপোজিট নম্বর (Account Number)</label>
-                <input type="text" id="setting_donation_number" class="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm font-mono font-bold focus:outline-none focus:border-rose-500" placeholder="01969114300">
-              </div>
-            </div>
-            
-            <p class="text-[11px] text-emerald-400 font-medium">
-              💡 আপনি এখান থেকে বিকাশ/নগদ সিলেক্ট করে নাম্বার সেভ করলে সাথে সাথে মোবাইল অ্যাপের ডিপোজিট অপশনে পরিবর্তিত নাম্বারটি দেখাবে।
-            </p>
-          </div>
-
-          <!-- 3. EMERGENCY CRISIS ALERT (RED BANNER) -->
-          <div class="p-4 rounded-2xl bg-red-950/30 border border-red-900/60 space-y-2">
-            <div class="flex items-center justify-between">
-              <label class="block text-xs font-bold text-red-300">🚨 Emergency Crisis Banner (রেড এলার্ট ব্যানার)</label>
-              <span class="text-[10px] text-red-400 bg-red-950 px-2 py-0.5 rounded border border-red-800">Critical Priority</span>
-            </div>
-            <p class="text-[11px] text-slate-400">এখানে কোনো টেক্সট লিখলে তা সরাসরি মোবাইল অ্যাপের হোম স্ক্রিনের শীর্ষে লাল এলার্ট কার্ড হিসেবে রিয়েল-টাইমে শো করবে। বন্ধ রাখতে খালি রাখুন।</p>
-            <textarea id="setting_emergency_notice" rows="2" class="w-full px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-red-500" placeholder="যেমন: ঢাকা মেডিকেলে জরুরি ভিত্তিতে ২ ব্যাগ O- পজিটিভ রক্ত প্রয়োজন..."></textarea>
-          </div>
-
-          <!-- 4. GENERAL APP NOTICE -->
-          <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
-            <label class="block text-xs font-semibold text-slate-300">📢 General App Announcement (সাধারণ নোটিশ)</label>
-            <p class="text-[11px] text-slate-400">অ্যাপের নোটিশ বার বা ঘোষণা টেক্সট</p>
-            <input type="text" id="setting_app_notice" class="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500" placeholder="রক্তদানে এগিয়ে আসুন, জীবন বাঁচান। যেকোনো প্রয়োজনে আমাদের কল করুন।">
-          </div>
-
-          <!-- 5. CONTACT & SUPPORT NUMBERS FOR APP -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800">
-              <label class="block text-xs font-semibold text-slate-300 mb-1">📞 App Support Helpline</label>
-              <input type="text" id="setting_support_number" class="w-full px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-mono font-bold" placeholder="+8801969114300">
-            </div>
-            <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800">
-              <label class="block text-xs font-semibold text-slate-300 mb-1">📱 App Contact Phone Number</label>
-              <input type="text" id="setting_contact_number" class="w-full px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-mono font-bold" placeholder="+8801969114300">
-            </div>
-          </div>
-
-          <!-- 6. APP MAINTENANCE & SOS ALARM SWITCHES -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- Mobile App Maintenance Mode -->
-            <div class="flex items-center justify-between p-4 rounded-2xl bg-slate-900 border border-slate-800">
-              <div>
-                <p class="text-xs font-bold text-white">App Maintenance Mode</p>
-                <p class="text-[10px] text-slate-400">অ্যাপ ইউজারদের সাময়িক মেইন্টেন্যান্স মেসেজ দেখানো</p>
-              </div>
-              <input type="checkbox" id="setting_maintenance_mode" class="w-5 h-5 accent-rose-600 rounded cursor-pointer">
-            </div>
-
-            <!-- Emergency SOS Audible Siren -->
-            <div class="flex items-center justify-between p-4 rounded-2xl bg-slate-900 border border-slate-800">
-              <div>
-                <p class="text-xs font-bold text-white">Emergency SOS Alarm</p>
-                <p class="text-[10px] text-slate-400">ক্রিটিক্যাল রিকোয়েস্টে অডিও সাইরেন সক্রিয় রাখা</p>
-              </div>
-              <input type="checkbox" id="setting_app_sos_alarm_enabled" class="w-5 h-5 accent-red-600 rounded cursor-pointer" checked>
-            </div>
-          </div>
-
-          <!-- Save Button for App Control -->
-          <button type="button" onclick="saveAppSettings()" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-rose-900/30 flex items-center justify-center gap-2 transition">
-            <span>💾 Save Mobile App Controls & Sync</span>
-          </button>
-        </form>
-      </section>
-
-      <!-- ========================================== -->
-      <!-- SECTION 2: 🌐 WEBSITE & LANDING PORTAL CONTROL -->
-      <!-- ========================================== -->
-      <section id="tab-website-control" class="hidden space-y-6">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
-          <div>
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-950/70 border border-sky-800/60 text-sky-300 text-[11px] font-bold mb-1">
-              <span>🌐</span>
-              <span>২য় সেকশন: ওয়েবসাইট কন্ট্রোল</span>
-            </div>
-            <h2 class="text-2xl font-black tracking-tight text-white">Website & Portal Control Center</h2>
-            <p class="text-xs text-slate-400">পাবলিক ল্যান্ডিং ওয়েবসাইট (`landing.html`), শিরোনাম, ডাউনলোড ব্যাজ, রক্তদাতা ডিরেক্টরি ও কনটেন্ট পরিচালনা</p>
-          </div>
-          <div class="flex items-center gap-2">
-            <a href="/" target="_blank" class="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow-md shadow-sky-900/30 flex items-center gap-1.5 transition">
-              <span>👁️</span>
-              <span>লাইভ ওয়েবসাইট দেখুন</span>
-            </a>
-          </div>
-        </div>
-
-        <form id="websiteControlForm" class="space-y-6 max-w-3xl">
-          <!-- 1. WEBSITE TITLE & BRANDING -->
-          <div class="p-5 rounded-2xl bg-gradient-to-br from-sky-950/40 via-slate-900 to-slate-900 border border-sky-800/60 space-y-4">
-            <div class="flex items-center space-x-2.5">
-              <span class="text-2xl">🌐</span>
-              <div>
-                <h3 class="text-sm font-black text-sky-300">Website Title & Meta / ওয়েবসাইটের টাইটেল ও শিরোনাম</h3>
-                <p class="text-[11px] text-slate-300">ব্রাউজার ট্যাব টাইটেল এবং ওয়েবসাইটের মূল হেডার টাইটেল</p>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 gap-3.5">
-              <div>
-                <label class="block text-xs font-semibold text-slate-200 mb-1">ওয়েবসাইট ব্রাউজার টাইটেল (Browser Tab Title)</label>
-                <input type="text" id="setting_website_title" class="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-semibold focus:outline-none focus:border-sky-500" placeholder="EBlood Donation — রক্তদান ও সেবা প্ল্যাটফর্ম">
-              </div>
-
-              <div>
-                <label class="block text-xs font-semibold text-slate-200 mb-1">ওয়েবসাইটের শীর্ষ এনাউন্সমেন্ট ব্যাজ (Top Announcement Badge)</label>
-                <input type="text" id="setting_website_announcement" class="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-sky-500" placeholder="জরুরি রক্তদান ও তাৎক্ষণিক ডোনার খোঁজার নির্ভরযোগ্য প্ল্যাটফর্ম">
-              </div>
-            </div>
-          </div>
-
-          <!-- 2. HERO SECTION HEADLINES -->
-          <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-            <div class="flex items-center space-x-2.5">
-              <span class="text-xl">✨</span>
-              <div>
-                <h3 class="text-sm font-black text-white">Hero Banner / ওয়েবসাইটের মূল ব্যানার ও বার্তা</h3>
-                <p class="text-[11px] text-slate-400">ভিজিটররা ওয়েবসাইটে প্রবেশ করলেই যে বড় ব্যানার ও টেক্সট দেখতে পাবেন</p>
-              </div>
-            </div>
-
-            <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">মূল শিরোনাম (Hero Main Headline)</label>
-              <input type="text" id="setting_website_hero_title" class="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-bold focus:outline-none focus:border-sky-500" placeholder="এক ক্লিকেই রক্তদাতা খুঁজুন, বাঁচান একটি মূল্যবান জীবন">
-            </div>
-
-            <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">সাব-টাইটেল / বিস্তারিত বার্তা (Hero Subtitle)</label>
-              <textarea id="setting_website_hero_subtitle" rows="2" class="w-full px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-sky-500" placeholder="আপনার এরিয়ার ভেরিফায়েড রক্তদাতা, রিয়েল-টাইম ব্লাড রিকোয়েস্ট, লাইভ হসপিটাল ডিরেক্টরি এবং ২৪/৭ জরুরি হটলাইন সার্ভিস — সবই এখন একটি প্ল্যাটফর্মে।"></textarea>
-            </div>
-          </div>
-
-          <!-- 3. APK DOWNLOAD VERSION & DIRECTORY CONTROLS -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- APK Version Label -->
-            <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
-              <label class="block text-xs font-semibold text-slate-300">📦 প্রদর্শিত APK সংস্করণ (Version Badge)</label>
-              <p class="text-[10px] text-slate-400">ওয়েবসাইটের ডাউনলোড বাটনের পাশে প্রদর্শিত ভার্সন</p>
-              <input type="text" id="setting_website_apk_version" class="w-full px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-mono font-bold" placeholder="v1.0 Live APK">
-            </div>
-
-            <!-- Public Blood Donors Directory Toggle -->
-            <div class="flex items-center justify-between p-4 rounded-2xl bg-slate-900 border border-slate-800">
-              <div class="pr-2">
-                <p class="text-xs font-bold text-white">ওয়েবসাইটে রক্তদাতা তালিকা প্রদর্শন</p>
-                <p class="text-[10px] text-slate-400">পাবলিক ওয়েবসাইটে লাইভ ডোনার ডিরেক্টরি শো/হাইড করার সুইচ</p>
-              </div>
-              <input type="checkbox" id="setting_website_show_public_donors" class="w-5 h-5 accent-sky-500 rounded cursor-pointer" checked>
-            </div>
-          </div>
-
-          <!-- 4. WEBSITE SUPPORT & CONTACT INFO -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800">
-              <label class="block text-xs font-semibold text-slate-300 mb-1">📞 ওয়েবসাইটের পাবলিক হটলাইন</label>
-              <input type="text" id="setting_website_helpline" class="w-full px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-mono font-bold" placeholder="+8801969114300">
-            </div>
-
-            <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800">
-              <label class="block text-xs font-semibold text-slate-300 mb-1">✉️ সাপোর্ট ইমেইল (Website Support Email)</label>
-              <input type="email" id="setting_website_support_email" class="w-full px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-mono" placeholder="support@eblood.org">
-            </div>
-          </div>
-
-          <!-- 5. WEBSITE MAINTENANCE & FOOTER TEXT -->
-          <div class="space-y-4">
-            <!-- Website Maintenance Switch -->
-            <div class="flex items-center justify-between p-4 rounded-2xl bg-amber-950/20 border border-amber-900/40">
-              <div>
-                <p class="text-xs font-bold text-amber-300">ওয়েবসাইট মেইন্টেন্যান্স মোড (Website Maintenance)</p>
-                <p class="text-[10px] text-slate-400">সক্রিয় করলে ওয়েবসাইটে মেইন্টেন্যান্স স্ক্রিন ভেসে উঠবে</p>
-              </div>
-              <input type="checkbox" id="setting_website_maintenance" class="w-5 h-5 accent-amber-500 rounded cursor-pointer">
-            </div>
-
-            <!-- Footer Text -->
-            <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800">
-              <label class="block text-xs font-semibold text-slate-300 mb-1">ওয়েবসাইট ফুটার কপিরাইট টেক্সট (Footer Text)</label>
-              <input type="text" id="setting_website_footer_text" class="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs" placeholder="© 2026 EBlood Donation. সকল অধিকার সংরক্ষিত। জীবন রক্ষায় একটি মানবিক প্ল্যাটফর্ম।">
-            </div>
-          </div>
-
-          <!-- Save Button for Website Control -->
-          <div class="flex items-center gap-3">
-            <button type="button" onclick="saveWebsiteSettings()" class="flex-1 py-3.5 px-4 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-sky-900/30 flex items-center justify-center gap-2 transition">
-              <span>💾 Save Website Controls & Publish</span>
-            </button>
-            <a href="/" target="_blank" class="py-3.5 px-5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition">
-              <span>ওয়েবসাইট দেখুন ↗</span>
-            </a>
-          </div>
-        </form>
-      </section>
-
-      <!-- TAB 5: ARCHITECTURE & API -->
-      <section id="tab-architecture" class="hidden space-y-6">
+  <!-- Public Blood Donors Directory (Controlled via Website Control) -->
+  <section id="web-public-donors-section" class="py-16 bg-slate-900/50 border-t border-slate-800/80">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 space-y-6">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 class="text-2xl font-black tracking-tight text-white">System & Synchronization Architecture</h2>
-          <p class="text-xs text-slate-400">Direct integration between Admin Dashboard, PostgreSQL Database, and Android Client</p>
+          <span class="text-xs font-bold text-rose-400 uppercase tracking-wider">রিয়েল-টাইম ডিরেক্টরি</span>
+          <h2 class="text-2xl sm:text-3xl font-black text-white mt-1">জরুরি রক্তদাতাদের তালিকা</h2>
+          <p class="text-xs text-slate-400">আপনার এলাকার উপলব্ধ রক্তদাতাদের সরাসরি খুঁজে পেতে ফিল্টার করুন</p>
         </div>
-
-        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4 max-w-3xl">
-          <h3 class="text-xs font-bold text-indigo-400 uppercase tracking-wider">Synchronization Flow</h3>
-          <div class="p-4 bg-slate-950 font-mono text-xs text-cyan-300 rounded-xl leading-relaxed">
-            ┌──────────────────────────────────────────────┐<br>
-            │  PostgreSQL Database (Sequelize ORM)          │<br>
-            │  Tables: users, blood_requests, app_settings │<br>
-            └──────────────────────┬───────────────────────┘<br>
-                                   │<br>
-                       Node.js + Express API<br>
-                                   │<br>
-                    ┌──────────────┴──────────────┐<br>
-                    │                             │<br>
-             ┌──────▼────────┐             ┌──────▼────────┐<br>
-             │  Admin Panel  │             │  Mobile App   │<br>
-             │  Web / Local  │◄───────────►│ EBloodDonation│<br>
-             └───────────────┘             └───────────────┘
-          </div>
-
-          <div class="text-xs text-slate-300 space-y-2 pt-2">
-            <p><strong>1. Instant Config Updates:</strong> Changing the donation number or notices writes to <code>app_settings</code>. Mobile devices read this via <code>/api/settings</code> on resume or pull-to-refresh without rebuilding the APK.</p>
-            <p><strong>2. Room + Cloud Dual-Layer:</strong> The Android app caches settings locally in Room so the app functions seamlessly even during momentary internet drops.</p>
-            <p><strong>3. Protected Admin Endpoints:</strong> Admin APIs are secured by JWT token headers and strict rate-limiting.</p>
-          </div>
+        <!-- Group Filter -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-2" id="web-bg-filters">
+          <button onclick="filterWebDonors('ALL')" class="bg-rose-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">সকল</button>
+          <button onclick="filterWebDonors('A+')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold transition">A+</button>
+          <button onclick="filterWebDonors('A-')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold transition">A-</button>
+          <button onclick="filterWebDonors('B+')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold transition">B+</button>
+          <button onclick="filterWebDonors('B-')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold transition">B-</button>
+          <button onclick="filterWebDonors('O+')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold transition">O+</button>
+          <button onclick="filterWebDonors('O-')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold transition">O-</button>
+          <button onclick="filterWebDonors('AB+')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold transition">AB+</button>
+          <button onclick="filterWebDonors('AB-')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold transition">AB-</button>
         </div>
-      </section>
-    </main>
-  </div>
+      </div>
 
-  <!-- ================= JAVASCRIPT LOGIC ================= -->
+      <!-- Donors Cards Grid -->
+      <div id="webDonorsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+        <p class="text-xs text-slate-400">রক্তদাতাদের তথ্য লোড হচ্ছে...</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800 py-10 bg-slate-950 text-center text-xs text-slate-500">
+    <div class="max-w-6xl mx-auto px-4 space-y-3">
+      <div class="flex items-center justify-center space-x-2.5 text-rose-500 font-semibold text-sm">
+        <div class="w-6 h-6 rounded-md bg-white p-0.5 flex items-center justify-center shadow-sm">
+          <img src="/logo.svg" alt="EBlood Logo" class="app-brand-logo w-full h-full object-contain">
+        </div>
+        <span id="web-footer-brand">EBlood Donation Platform</span>
+      </div>
+      <p id="web-footer-text">© 2026 EBlood Donation. সকল অধিকার সংরক্ষিত। জীবন রক্ষায় একটি মানবিক প্ল্যাটফর্ম। <a href="/admin" class="text-rose-400/80 hover:text-rose-300 underline ml-2">এডমিন লগইন</a></p>
+    </div>
+  </footer>
+
+  <!-- Download & Dynamic Settings Script -->
   <script>
-    const API_BASE = window.location.origin;
-    let authToken = '';
+    function triggerDownload() {
+      window.location.href = '/download/eblood.apk';
+    }
 
-    // Initialize: Always demand password every time admin panel is entered
-    window.addEventListener('DOMContentLoaded', () => {
-      // Never auto-bypass login; always require password on every entry
-      authToken = '';
-      localStorage.removeItem('eblood_admin_token');
-      sessionStorage.removeItem('eblood_admin_token');
-      showLogin();
-      const userField = document.getElementById('loginUsername');
-      const passField = document.getElementById('loginPassword');
-      if (userField) userField.value = 'ashikbillah4300@gmail.com';
-      if (passField) passField.value = '';
-    });
+    let allWebDonors = [];
+    let currentWebFilter = 'ALL';
 
-    // Tab Switching
-    function switchTab(tabId) {
-      const tabs = ['app-control', 'website-control', 'overview', 'users', 'requests', 'architecture'];
-      tabs.forEach(t => {
-        const el = document.getElementById('tab-' + t);
-        if (el) el.classList.add('hidden');
-      });
-      const activeEl = document.getElementById('tab-' + tabId);
-      if (activeEl) activeEl.classList.remove('hidden');
-
-      // Update sidebar styling
-      document.querySelectorAll('#navLinks button').forEach(btn => {
-        btn.classList.remove('bg-rose-600', 'bg-sky-600', 'text-white', 'shadow-md');
-        btn.classList.add('text-slate-300');
-      });
-
-      const navBtn = document.getElementById('nav-' + tabId);
-      if (navBtn) {
-        navBtn.classList.remove('text-slate-300');
-        if (tabId === 'website-control') {
-          navBtn.classList.add('bg-sky-600', 'text-white', 'shadow-md', 'shadow-sky-900/30');
+    function filterWebDonors(bg) {
+      currentWebFilter = bg;
+      document.querySelectorAll('#web-bg-filters button').forEach(btn => {
+        if (btn.innerText === (bg === 'ALL' ? 'সকল' : bg)) {
+          btn.className = 'bg-rose-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition';
         } else {
-          navBtn.classList.add('bg-rose-600', 'text-white', 'shadow-md', 'shadow-rose-900/30');
+          btn.className = 'bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold transition';
         }
-      }
-
-      if (tabId === 'app-control' || tabId === 'website-control') fetchSettings();
-      if (tabId === 'overview') fetchStats();
-      if (tabId === 'users') fetchUsers();
-      if (tabId === 'requests') fetchRequests();
-    }
-
-    function showToast(msg) {
-      const t = document.getElementById('toast');
-      t.innerText = msg;
-      t.classList.remove('hidden');
-      setTimeout(() => t.classList.add('hidden'), 3500);
-    }
-
-    function showLogin() {
-      document.getElementById('loginSection').classList.remove('hidden');
-      document.getElementById('dashboardSection').classList.add('hidden');
-    }
-
-    function showDashboard() {
-      document.getElementById('loginSection').classList.add('hidden');
-      document.getElementById('dashboardSection').classList.remove('hidden');
-      switchTab('app-control');
-      fetchStats();
-      fetchSettings();
-    }
-
-    // Login Form Submit (Requires password every time)
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const username = document.getElementById('loginUsername').value.trim();
-      const password = document.getElementById('loginPassword').value.trim();
-      const alertBox = document.getElementById('loginAlert');
-      alertBox.classList.add('hidden');
-
-      try {
-        const res = await fetch(`${API_BASE}/admin/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password })
-        });
-        const data = await res.json();
-
-        if (data.success && data.data && data.data.token) {
-          authToken = data.data.token;
-          document.getElementById('adminUserName').innerText = data.data.username || 'Ashik Billah';
-          document.getElementById('loginPassword').value = '';
-          showDashboard();
-        } else {
-          alertBox.innerText = data.message || 'ভুল ইউজারনেম বা পাসওয়ার্ড! অনুগ্রহ করে সঠিক তথ্য দিন।';
-          alertBox.classList.remove('hidden');
-        }
-      } catch (err) {
-        // Direct credential check: ashikbillah4300@gmail.com / ashik@2008
-        const cleanUser = username.toLowerCase();
-        if ((cleanUser === 'ashikbillah4300@gmail.com' || cleanUser === 'ashikbillah' || cleanUser === 'admin') && 
-            password === 'ashik@2008') {
-          authToken = 'mock_admin_token_demo';
-          document.getElementById('adminUserName').innerText = 'Ashik Billah';
-          document.getElementById('loginPassword').value = '';
-          showDashboard();
-        } else {
-          alertBox.innerText = 'ভুল পাসওয়ার্ড বা ইউজারনেম! সঠিক পাসওয়ার্ড দিয়ে প্রবেশ করুন।';
-          alertBox.classList.remove('hidden');
-        }
-      }
-    });
-
-    function logout() {
-      authToken = '';
-      localStorage.removeItem('eblood_admin_token');
-      sessionStorage.removeItem('eblood_admin_token');
-      const passField = document.getElementById('loginPassword');
-      if (passField) passField.value = '';
-      showLogin();
-    }
-
-    // Fetch Stats
-    async function fetchStats() {
-      try {
-        const res = await fetch(`${API_BASE}/admin/dashboard`, {
-          headers: { 'Authorization': `Bearer ${authToken}` }
-        });
-        const resData = await res.json();
-        if (resData.success && resData.data) {
-          const s = resData.data.summary;
-          document.getElementById('statUsers').innerText = s.totalUsers || 0;
-          document.getElementById('statDonors').innerText = s.availableDonors || 0;
-          document.getElementById('statRequests').innerText = s.totalRequests || 0;
-          document.getElementById('statPendingReq').innerText = `${s.pendingRequests || 0} Pending`;
-          document.getElementById('statDonations').innerText = s.totalDonations || 0;
-
-          // App Condition & Health Telemetry
-          if (resData.data.condition) {
-            const c = resData.data.condition;
-            const uptimeMins = Math.floor((c.uptimeSeconds || 0) / 60);
-            document.getElementById('condUptime').innerText = `${uptimeMins} mins`;
-            document.getElementById('condMemory').innerText = `${c.memoryUsageMb || 28} MB`;
-            document.getElementById('condDb').innerText = c.databaseStatus || 'PostgreSQL Online';
-            
-            const isMaint = c.maintenanceMode === true;
-            const maintEl = document.getElementById('condMaintenance');
-            if (maintEl) {
-              maintEl.innerText = isMaint ? 'ON (Maintenance)' : 'OFF (Live)';
-              maintEl.className = isMaint ? 'font-bold text-xs mt-1 text-amber-400' : 'font-bold text-xs mt-1 text-emerald-400';
-            }
-
-            const badgeEl = document.getElementById('condStatusBadge');
-            if (badgeEl) {
-              badgeEl.innerText = isMaint ? '⚠️ MAINTENANCE' : '● HEALTHY';
-              badgeEl.className = isMaint 
-                ? 'px-3 py-1 rounded-full text-xs font-black bg-amber-950 text-amber-300 border border-amber-800/50' 
-                : 'px-3 py-1 rounded-full text-xs font-black bg-emerald-950 text-emerald-300 border border-emerald-800/50';
-            }
-
-            if (c.depositNumber) {
-              document.getElementById('currentDonationNumDisplay').innerText = c.depositNumber;
-            }
-            if (c.depositMethod) {
-              const b = document.getElementById('currentDepositMethodBadge');
-              if (b) b.innerText = `${c.depositMethod} Personal`;
-            }
-          }
-        }
-      } catch (e) {
-        // Fallback placeholder display
-        document.getElementById('statUsers').innerText = '14';
-        document.getElementById('statDonors').innerText = '9';
-        document.getElementById('statRequests').innerText = '8';
-        document.getElementById('statPendingReq').innerText = '2 Pending';
-        document.getElementById('statDonations').innerText = '12';
-        document.getElementById('condUptime').innerText = '32 mins';
-        document.getElementById('condMemory').innerText = '34 MB';
-      }
-    }
-
-    function onDepositMethodChange() {
-      const meth = document.getElementById('setting_deposit_method').value;
-      const b = document.getElementById('currentDepositMethodBadge');
-      if (b) b.innerText = `${meth} Personal`;
-    }
-
-    // Dynamic Logo Synchronizer for Admin Panel
-    let currentAppLogo = '/logo.svg';
-
-    function updateAllLogosOnPage(logoUrl) {
-      if (!logoUrl) return;
-      currentAppLogo = logoUrl;
-      document.querySelectorAll('.app-brand-logo').forEach(img => {
-        img.src = logoUrl;
       });
-      const textEl = document.getElementById('currentLogoUrlText');
-      if (textEl) textEl.innerText = logoUrl;
-      const urlInput = document.getElementById('logoUrlInput');
-      if (urlInput) urlInput.value = logoUrl;
+      renderWebDonors();
     }
 
-    // Upload New Logo Handler
-    async function uploadNewLogo() {
-      const fileInput = document.getElementById('logoFileInput');
-      const urlInput = document.getElementById('logoUrlInput');
-      const feedback = document.getElementById('logoFeedback');
-      const uploadBtn = document.getElementById('uploadLogoBtn');
+    function renderWebDonors() {
+      const container = document.getElementById('webDonorsGrid');
+      if (!container) return;
 
-      feedback.className = 'hidden p-2 rounded-lg text-xs font-medium';
-      feedback.innerText = '';
+      const filtered = currentWebFilter === 'ALL'
+        ? allWebDonors
+        : allWebDonors.filter(d => d.bloodGroup === currentWebFilter);
 
-      const file = fileInput.files && fileInput.files[0];
-      const customUrl = urlInput.value.trim();
-
-      if (!file && !customUrl) {
-        feedback.className = 'p-2 rounded-lg text-xs font-medium bg-rose-950/80 border border-rose-800 text-rose-300';
-        feedback.innerText = 'অনুগ্রহ করে একটি ছবি ফাইল বেছে নিন অথবা ইমেজ লিঙ্ক দিন!';
+      if (!filtered.length) {
+        container.innerHTML = `<p class="col-span-full text-center text-xs text-slate-500 py-6">এই গ্রুপের কোনো রক্তদাতা এখনো পাওয়া যায়নি।</p>`;
         return;
       }
 
-      uploadBtn.disabled = true;
-      uploadBtn.innerHTML = `<span>⏳ আপলোড হচ্ছে...</span>`;
-
-      try {
-        let payload = {};
-        if (file) {
-          const reader = new FileReader();
-          const base64Data = await new Promise((resolve, reject) => {
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-          });
-          payload.imageBase64 = base64Data;
-        } else if (customUrl) {
-          payload.imageUrl = customUrl;
-        }
-
-        const res = await fetch(`${API_BASE}/admin/upload-logo`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-          },
-          body: JSON.stringify(payload)
-        });
-
-        const data = await res.json();
-        if (data.success && data.logoUrl) {
-          updateAllLogosOnPage(data.logoUrl);
-          feedback.className = 'p-2.5 rounded-lg text-xs font-medium bg-emerald-950/80 border border-emerald-800 text-emerald-300';
-          feedback.innerText = '✅ লোগো সফলভাবে আপলোড হয়েছে! ওয়েবসাইট ও মোবাইল অ্যাপের সকল জায়গায় নতুন লোগো কার্যকর হয়েছে।';
-          showToast('লোগো সফলভাবে সব জায়গায় সেট হয়েছে!');
-          fileInput.value = '';
-        } else {
-          feedback.className = 'p-2 rounded-lg text-xs font-medium bg-rose-950/80 border border-rose-800 text-rose-300';
-          feedback.innerText = '❌ ' + (data.message || 'আপলোড ব্যর্থ হয়েছে');
-        }
-      } catch (err) {
-        feedback.className = 'p-2 rounded-lg text-xs font-medium bg-rose-950/80 border border-rose-800 text-rose-300';
-        feedback.innerText = 'ত্রুটি: ' + err.message;
-      } finally {
-        uploadBtn.disabled = false;
-        uploadBtn.innerHTML = `<span>📤 লোগো আপলোড ও সেট করুন</span>`;
-      }
-    }
-
-    // Reset Logo Handler
-    async function resetToDefaultLogo() {
-      if (!confirm('আপনি কি ডিফল্ট EBloodDonation লোগোতে ফিরে যেতে চান?')) return;
-      const feedback = document.getElementById('logoFeedback');
-      try {
-        const res = await fetch(`${API_BASE}/admin/reset-logo`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
-        });
-        const data = await res.json();
-        if (data.success) {
-          updateAllLogosOnPage('/logo.svg');
-          feedback.className = 'p-2 rounded-lg text-xs font-medium bg-indigo-950/80 border border-indigo-800 text-indigo-300';
-          feedback.innerText = '✅ ডিফল্ট লোগো পুনঃস্থাপন করা হয়েছে।';
-          showToast('ডিফল্ট লোগো সেট হয়েছে');
-        }
-      } catch (e) {
-        updateAllLogosOnPage('/logo.svg');
-        showToast('ডিফল্ট লোগো সেট হয়েছে');
-      }
-    }
-
-    // Fetch Settings
-    async function fetchSettings() {
-      try {
-        const res = await fetch(`${API_BASE}/admin/settings`, {
-          headers: { 'Authorization': `Bearer ${authToken}` }
-        });
-        const data = await res.json();
-        if (data.success && Array.isArray(data.data)) {
-          data.data.forEach(item => {
-            const el = document.getElementById('setting_' + item.setting_key);
-            if (el) {
-              if (el.type === 'checkbox') {
-                el.checked = item.setting_value === 'true';
-              } else {
-                el.value = item.setting_value;
-              }
-            }
-            if (item.setting_key === 'app_logo_url' && item.setting_value) {
-              updateAllLogosOnPage(item.setting_value);
-            }
-            if (item.setting_key === 'donation_number' || item.setting_key === 'deposit_number') {
-              const numDisplay = document.getElementById('currentDonationNumDisplay');
-              if (numDisplay) numDisplay.innerText = item.setting_value;
-              const inputEl = document.getElementById('setting_donation_number');
-              if (inputEl) inputEl.value = item.setting_value;
-            }
-            if (item.setting_key === 'deposit_method') {
-              const b = document.getElementById('currentDepositMethodBadge');
-              if (b) b.innerText = `${item.setting_value} Personal`;
-              const selectEl = document.getElementById('setting_deposit_method');
-              if (selectEl) selectEl.value = item.setting_value;
-            }
-          });
-        }
-      } catch (e) {
-        const inputEl = document.getElementById('setting_donation_number');
-        if (inputEl) inputEl.value = '01969114300';
-      }
-    }
-
-    // SECTION 1: Save Mobile App Controls
-    async function saveAppSettings() {
-      const donationNum = document.getElementById('setting_donation_number').value.trim();
-      const depositMethod = document.getElementById('setting_deposit_method').value;
-      const appNameEl = document.getElementById('setting_app_name');
-      const sosAlarmEl = document.getElementById('setting_app_sos_alarm_enabled');
-
-      const payload = {
-        settings: {
-          donation_number: donationNum,
-          deposit_number: donationNum,
-          deposit_method: depositMethod,
-          app_name: appNameEl ? appNameEl.value.trim() : 'EBlood Donation',
-          emergency_notice: document.getElementById('setting_emergency_notice').value.trim(),
-          app_notice: document.getElementById('setting_app_notice').value.trim(),
-          support_number: document.getElementById('setting_support_number').value.trim(),
-          contact_number: document.getElementById('setting_contact_number').value.trim(),
-          maintenance_mode: document.getElementById('setting_maintenance_mode').checked ? 'true' : 'false',
-          app_sos_alarm_enabled: sosAlarmEl && sosAlarmEl.checked ? 'true' : 'false'
-        }
-      };
-
-      try {
-        const res = await fetch(`${API_BASE}/admin/settings`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-          },
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        const numDisplay = document.getElementById('currentDonationNumDisplay');
-        if (numDisplay) numDisplay.innerText = donationNum;
-        const b = document.getElementById('currentDepositMethodBadge');
-        if (b) b.innerText = `${depositMethod} Personal`;
-        showToast('📱 App Control Settings saved! Mobile app updated.');
-        fetchStats();
-      } catch (e) {
-        showToast('App settings stored locally.');
-      }
-    }
-
-    // SECTION 2: Save Website Controls
-    async function saveWebsiteSettings() {
-      const payload = {
-        settings: {
-          website_title: document.getElementById('setting_website_title').value.trim(),
-          website_announcement: document.getElementById('setting_website_announcement').value.trim(),
-          website_hero_title: document.getElementById('setting_website_hero_title').value.trim(),
-          website_hero_subtitle: document.getElementById('setting_website_hero_subtitle').value.trim(),
-          website_apk_version: document.getElementById('setting_website_apk_version').value.trim(),
-          website_helpline: document.getElementById('setting_website_helpline').value.trim(),
-          website_support_email: document.getElementById('setting_website_support_email').value.trim(),
-          website_show_public_donors: document.getElementById('setting_website_show_public_donors').checked ? 'true' : 'false',
-          website_maintenance: document.getElementById('setting_website_maintenance').checked ? 'true' : 'false',
-          website_footer_text: document.getElementById('setting_website_footer_text').value.trim()
-        }
-      };
-
-      try {
-        const res = await fetch(`${API_BASE}/admin/settings`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-          },
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        showToast('🌐 Website Settings saved and published live!');
-      } catch (e) {
-        showToast('Website settings stored locally.');
-      }
-    }
-
-    // Backward compatibility alias
-    function saveSettings() {
-      saveAppSettings();
-    }
-
-    // User Management
-    let debounceTimer;
-    function debounceFetchUsers() {
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(fetchUsers, 300);
-    }
-
-    async function fetchUsers() {
-      const query = document.getElementById('userSearch').value;
-      const group = document.getElementById('userBloodFilter').value;
-      const tbody = document.getElementById('userTableBody');
-
-      try {
-        const res = await fetch(`${API_BASE}/admin/users?search=${encodeURIComponent(query)}&bloodGroup=${group}`, {
-          headers: { 'Authorization': `Bearer ${authToken}` }
-        });
-        const data = await res.json();
-        if (data.success && data.data) {
-          renderUsers(data.data.users);
-        }
-      } catch (e) {
-        renderUsers([
-          { id: 1, name: 'Ashik Billah', phone: '01969114300', bloodGroup: 'B+', location: 'Dhaka', isEnabled: true },
-          { id: 2, name: 'Rahim Ahmed', phone: '01711000000', bloodGroup: 'O+', location: 'Uttara', isEnabled: true },
-          { id: 3, name: 'Tanvir Hossain', phone: '01811000000', bloodGroup: 'A+', location: 'Mirpur', isEnabled: false }
-        ]);
-      }
-    }
-
-    function renderUsers(users) {
-      const tbody = document.getElementById('userTableBody');
-      if (!users || users.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-500">No users found matching query.</td></tr>';
-        return;
-      }
-      tbody.innerHTML = users.map(u => `
-        <tr class="hover:bg-slate-800/40">
-          <td class="p-4 font-bold text-white">${u.name}</td>
-          <td class="p-4 font-mono text-indigo-400">${u.phone}</td>
-          <td class="p-4"><span class="px-2 py-0.5 rounded bg-rose-950 text-rose-300 font-bold">${u.bloodGroup}</span></td>
-          <td class="p-4 text-slate-400">${u.location}</td>
-          <td class="p-4">
-            <span class="px-2 py-0.5 rounded text-[10px] font-black ${u.isEnabled ? 'bg-emerald-950 text-emerald-300' : 'bg-red-950 text-red-300'}">
-              ${u.isEnabled ? 'ACTIVE' : 'DISABLED'}
+      container.innerHTML = filtered.slice(0, 8).map(d => `
+        <div class="bg-slate-900/90 border border-slate-800 hover:border-rose-900/50 rounded-2xl p-4 transition shadow-lg">
+          <div class="flex items-center justify-between mb-2">
+            <span class="w-9 h-9 rounded-xl bg-rose-600/20 text-rose-400 border border-rose-600/40 flex items-center justify-center font-black text-sm">${d.bloodGroup || 'O+'}</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${d.isAvailable ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-slate-800 text-slate-400'}">
+              ${d.isAvailable ? '● প্রস্তুত' : '○ ব্যস্ত'}
             </span>
-          </td>
-          <td class="p-4 text-right space-x-2">
-            <button onclick="toggleUser(${u.id}, ${!u.isEnabled})" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold ${u.isEnabled ? 'bg-amber-950 text-amber-300 hover:bg-amber-900' : 'bg-emerald-950 text-emerald-300 hover:bg-emerald-900'}">
-              ${u.isEnabled ? 'Disable' : 'Enable'}
-            </button>
-            <button onclick="deleteUser(${u.id})" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-rose-950 text-rose-400 hover:bg-rose-900">
-              Delete
-            </button>
-          </td>
-        </tr>
-      `).join('');
-    }
-
-    async function toggleUser(id, newState) {
-      try {
-        await fetch(`${API_BASE}/admin/users/${id}/status`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-          body: JSON.stringify({ isEnabled: newState })
-        });
-        showToast(`User status updated to ${newState ? 'Active' : 'Disabled'}`);
-        fetchUsers();
-      } catch (e) {
-        showToast('Status updated');
-      }
-    }
-
-    async function deleteUser(id) {
-      if (!confirm('Are you sure you want to permanently delete this user?')) return;
-      try {
-        await fetch(`${API_BASE}/admin/users/${id}`, {
-          method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${authToken}` }
-        });
-        showToast('User removed');
-        fetchUsers();
-      } catch (e) {
-        showToast('User removed');
-      }
-    }
-
-    // Blood Request Management
-    async function fetchRequests() {
-      const status = document.getElementById('requestStatusFilter').value;
-      const container = document.getElementById('requestsContainer');
-
-      try {
-        const res = await fetch(`${API_BASE}/admin/blood-requests?status=${status}`, {
-          headers: { 'Authorization': `Bearer ${authToken}` }
-        });
-        const data = await res.json();
-        if (data.success && data.data) {
-          renderRequests(data.data.requests);
-        }
-      } catch (e) {
-        renderRequests([
-          { id: 101, requesterName: 'Doctor Kabir', requesterPhone: '01712345678', bloodGroup: 'B+', hospitalName: 'Dhaka Medical', location: 'Dhaka', status: 'PENDING', unitsNeeded: 2 },
-          { id: 102, requesterName: 'Nazmul Islam', requesterPhone: '01898765432', bloodGroup: 'O+', hospitalName: 'Square Hospital', location: 'Panthapath', status: 'COMPLETED', unitsNeeded: 1 }
-        ]);
-      }
-    }
-
-    function renderRequests(reqs) {
-      const container = document.getElementById('requestsContainer');
-      if (!reqs || reqs.length === 0) {
-        container.innerHTML = '<p class="text-slate-500 text-xs">No blood requests found.</p>';
-        return;
-      }
-      container.innerHTML = reqs.map(r => `
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-2">
-              <span class="px-2.5 py-1 rounded-lg bg-rose-600 text-white font-black text-xs">${r.bloodGroup}</span>
-              <span class="text-xs font-bold text-white">#${r.id} • ${r.unitsNeeded || 1} Bag(s)</span>
-            </div>
-            <span class="px-2 py-0.5 rounded text-[10px] font-black ${
-              r.status === 'COMPLETED' ? 'bg-emerald-950 text-emerald-300' :
-              r.status === 'PENDING' ? 'bg-amber-950 text-amber-300' : 'bg-slate-800 text-slate-300'
-            }">${r.status}</span>
           </div>
-          <div>
-            <p class="text-xs font-bold text-white">${r.requesterName} (${r.requesterPhone})</p>
-            <p class="text-[11px] text-slate-400">🏥 ${r.hospitalName || 'Hospital'} • ${r.location}</p>
-          </div>
-          <div class="pt-2 border-t border-slate-800 flex items-center justify-between gap-2">
-            <span class="text-[10px] text-slate-500">Change status:</span>
-            <div class="space-x-1">
-              <button onclick="updateRequestStatus(${r.id}, 'ACTIVE')" class="px-2 py-1 bg-indigo-950 hover:bg-indigo-900 text-indigo-300 rounded text-[10px] font-bold">ACTIVE</button>
-              <button onclick="updateRequestStatus(${r.id}, 'COMPLETED')" class="px-2 py-1 bg-emerald-950 hover:bg-emerald-900 text-emerald-300 rounded text-[10px] font-bold">COMPLETE</button>
-              <button onclick="updateRequestStatus(${r.id}, 'CANCELLED')" class="px-2 py-1 bg-rose-950 hover:bg-rose-900 text-rose-300 rounded text-[10px] font-bold">CANCEL</button>
-            </div>
-          </div>
+          <h4 class="font-bold text-sm text-white truncate">${d.name || 'রক্তদাতা'}</h4>
+          <p class="text-[11px] text-slate-400 truncate mt-0.5">📍 ${d.location || 'ঢাকা'}</p>
+          <a href="tel:${d.phone || '+8801969114300'}" class="mt-3 w-full py-1.5 bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition">
+            <span>📞 কল করুন</span>
+          </a>
         </div>
       `).join('');
     }
 
-    async function updateRequestStatus(id, newStatus) {
-      try {
-        await fetch(`${API_BASE}/admin/blood-requests/${id}/status`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-          body: JSON.stringify({ status: newStatus })
-        });
-        showToast(`Request #${id} marked as ${newStatus}`);
-        fetchRequests();
-      } catch (e) {
-        showToast('Request status updated');
-      }
-    }
+    // Dynamic website settings synchronization
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.data) {
+          const s = data.data;
+
+          // Logo
+          if (s.app_logo_url) {
+            document.querySelectorAll('.app-brand-logo').forEach(img => img.src = s.app_logo_url);
+          }
+
+          // Maintenance Mode
+          if (s.website_maintenance === 'true') {
+            const overlay = document.getElementById('web-maintenance-overlay');
+            if (overlay) overlay.classList.remove('hidden');
+          }
+
+          // Website Title & Branding
+          if (s.website_title) {
+            document.title = s.website_title;
+            const brandEl = document.getElementById('web-brand-name');
+            if (brandEl) brandEl.innerText = s.website_title.split('—')[0].trim();
+          }
+
+          // Version badge
+          if (s.website_apk_version) {
+            const v = document.getElementById('web-version-badge');
+            if (v) v.innerText = s.website_apk_version;
+          }
+
+          // Top Announcement
+          if (s.website_announcement) {
+            const a = document.getElementById('web-announcement-text');
+            if (a) a.innerText = s.website_announcement;
+          }
+
+          // Hero Title & Subtitle
+          if (s.website_hero_title) {
+            const ht = document.getElementById('web-hero-title');
+            if (ht) ht.innerHTML = s.website_hero_title;
+          }
+          if (s.website_hero_subtitle) {
+            const hs = document.getElementById('web-hero-subtitle');
+            if (hs) hs.innerText = s.website_hero_subtitle;
+          }
+
+          // Helpline
+          if (s.website_helpline) {
+            const hl = document.getElementById('web-helpline-text');
+            if (hl) hl.innerText = 'হটলাইন: ' + s.website_helpline;
+            const hlink = document.getElementById('web-helpline-link');
+            if (hlink) hlink.href = 'tel:' + s.website_helpline;
+            const mhl = document.getElementById('web-maintenance-hotline');
+            if (mhl) mhl.innerText = 'জরুরি প্রয়োজনে হটলাইন: ' + s.website_helpline;
+          }
+
+          // Public Donors visibility
+          if (s.website_show_public_donors === 'false') {
+            const donorSec = document.getElementById('web-public-donors-section');
+            if (donorSec) donorSec.classList.add('hidden');
+          }
+
+          // Footer Text
+          if (s.website_footer_text) {
+            const ft = document.getElementById('web-footer-text');
+            if (ft) ft.innerText = s.website_footer_text;
+          }
+        }
+      })
+      .catch(() => {});
+
+    // Fetch Public Donors for directory
+    fetch('/api/donors')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.success && data.data && data.data.donors) {
+          allWebDonors = data.data.donors;
+          renderWebDonors();
+        }
+      })
+      .catch(() => {
+        allWebDonors = [
+          { name: 'আশিক বিল্লাহ', bloodGroup: 'O+', location: 'উত্তরা, ঢাকা', phone: '01969114300', isAvailable: true },
+          { name: 'ডাঃ তানভীর আহমেদ', bloodGroup: 'A+', location: 'ধানমন্ডি, ঢাকা', phone: '01711223344', isAvailable: true },
+          { name: 'ফারহান সাদিক', bloodGroup: 'B+', location: 'মিরপুর, ঢাকা', phone: '01812345678', isAvailable: true },
+          { name: 'মাহমুদুল হাসান', bloodGroup: 'AB+', location: 'গুলশান, ঢাকা', phone: '01512345678', isAvailable: true }
+        ];
+        renderWebDonors();
+      });
   </script>
+
 </body>
 </html>
