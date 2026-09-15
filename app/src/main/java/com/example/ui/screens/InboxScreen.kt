@@ -25,8 +25,12 @@ import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.Message
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -72,9 +76,15 @@ import java.util.Locale
 fun InboxScreen(viewModel: EBloodViewModel) {
     val currentTab by viewModel.activeInboxTab.collectAsStateWithLifecycle()
     val allRequests by viewModel.allRequests.collectAsStateWithLifecycle()
+    val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    val pendingRequests = allRequests.filter { it.status == "PENDING" }
+    val myPhone = (currentUser?.phone?.ifBlank { null } ?: viewModel.sessionManager.getPhone()).trim()
+
+    // Requester must NOT see their own request in Pending
+    val pendingRequests = allRequests.filter {
+        it.status == "PENDING" && (myPhone.isEmpty() || it.requesterPhone.trim() != myPhone)
+    }
     val acceptedRequests = allRequests.filter { it.status == "ACCEPTED" || it.status == "COMPLETED" }
     val rejectedRequests = allRequests.filter { it.status == "REJECTED" }
 
@@ -93,19 +103,38 @@ fun InboxScreen(viewModel: EBloodViewModel) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = "Inbox",
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
-                )
-
-                IconButton(onClick = { /* Refresh */ }) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = "Refresh",
-                        tint = TextSecondary
+                Column {
+                    Text(
+                        text = "ইনবক্স ও নোটিফিকেশন",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
                     )
+                    Text(
+                        text = "২ দিন পর স্বয়ংক্রিয়ভাবে মুছে যাবে",
+                        fontSize = 11.sp,
+                        color = TextMuted
+                    )
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { viewModel.purgeOldRequests() }) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Refresh",
+                            tint = TextSecondary
+                        )
+                    }
+
+                    if (allRequests.isNotEmpty()) {
+                        IconButton(onClick = { viewModel.clearAllNotifications() }) {
+                            Icon(
+                                imageVector = Icons.Default.DeleteSweep,
+                                contentDescription = "Clear All",
+                                tint = CrimsonPrimary
+                            )
+                        }
+                    }
                 }
             }
 
@@ -182,7 +211,8 @@ fun InboxScreen(viewModel: EBloodViewModel) {
                                 PendingRequestCard(
                                     request = req,
                                     onAccept = { viewModel.acceptRequest(req) },
-                                    onReject = { viewModel.rejectRequest(req) }
+                                    onReject = { viewModel.rejectRequest(req) },
+                                    onDelete = { viewModel.deleteBloodRequest(req.id) }
                                 )
                             }
                         }
@@ -193,8 +223,8 @@ fun InboxScreen(viewModel: EBloodViewModel) {
                     if (acceptedRequests.isEmpty()) {
                         EmptyInboxState(
                             icon = Icons.Default.Check,
-                            title = "No accepted requests",
-                            subtitle = "Accepted blood requests will be listed here."
+                            title = "কোনো গৃহীত অনুরোধ নেই",
+                            subtitle = "কোনো ডোনার আপনার অনুরোধ গ্রহণ করলে বা আপনি কারো অনুরোধ গ্রহণ করলে এখানে দেখতে পাবেন।"
                         )
                     } else {
                         LazyColumn(
@@ -206,6 +236,9 @@ fun InboxScreen(viewModel: EBloodViewModel) {
                             items(acceptedRequests) { req ->
                                 AcceptedRequestCard(
                                     request = req,
+                                    onAcceptDonor = {
+                                        viewModel.confirmDonorAndRevealPhone(req)
+                                    },
                                     onCall = {
                                         val phone = req.acceptedDonorPhone ?: req.requesterPhone
                                         val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone"))
@@ -216,7 +249,8 @@ fun InboxScreen(viewModel: EBloodViewModel) {
                                         val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:$phone"))
                                         context.startActivity(intent)
                                     },
-                                    onComplete = { viewModel.completeDonation(req) }
+                                    onComplete = { viewModel.completeDonation(req) },
+                                    onDelete = { viewModel.deleteBloodRequest(req.id) }
                                 )
                             }
                         }
@@ -227,8 +261,8 @@ fun InboxScreen(viewModel: EBloodViewModel) {
                     if (rejectedRequests.isEmpty()) {
                         EmptyInboxState(
                             icon = Icons.Default.Block,
-                            title = "No rejected requests",
-                            subtitle = "No rejected requests to show."
+                            title = "কোনো প্রত্যাখ্যাত রিকোয়েস্ট নেই",
+                            subtitle = "প্রত্যাখ্যাত অনুরোধসমূহ এখানে তালিকাভুক্ত হবে।"
                         )
                     } else {
                         LazyColumn(
@@ -238,7 +272,10 @@ fun InboxScreen(viewModel: EBloodViewModel) {
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             items(rejectedRequests) { req ->
-                                RejectedRequestCard(request = req)
+                                RejectedRequestCard(
+                                    request = req,
+                                    onDelete = { viewModel.deleteBloodRequest(req.id) }
+                                )
                             }
                         }
                     }
@@ -283,7 +320,7 @@ fun EmptyInboxState(
 
             Text(
                 text = title,
-                fontSize = 18.sp,
+                fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary
             )
@@ -304,7 +341,8 @@ fun EmptyInboxState(
 fun PendingRequestCard(
     request: BloodRequest,
     onAccept: () -> Unit,
-    onReject: () -> Unit
+    onReject: () -> Unit,
+    onDelete: () -> Unit
 ) {
     Surface(
         modifier = Modifier
@@ -341,8 +379,19 @@ fun PendingRequestCard(
                     )
                 }
 
-                val timeStr = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date(request.timestamp))
-                Text(text = timeStr, fontSize = 11.sp, color = TextMuted)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val timeStr = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date(request.timestamp))
+                    Text(text = timeStr, fontSize = 11.sp, color = TextMuted)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    IconButton(onClick = onDelete, modifier = Modifier.size(28.dp)) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete",
+                            tint = TextMuted,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -362,7 +411,7 @@ fun PendingRequestCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Accept / Reject Buttons (Requirement 5)
+            // Accept / Reject Buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -401,10 +450,16 @@ fun PendingRequestCard(
 @Composable
 fun AcceptedRequestCard(
     request: BloodRequest,
+    onAcceptDonor: () -> Unit,
     onCall: () -> Unit,
     onSms: () -> Unit,
-    onComplete: () -> Unit
+    onComplete: () -> Unit,
+    onDelete: () -> Unit
 ) {
+    val donorName = request.acceptedDonorName ?: "রক্তদাতা"
+    val donorPhone = request.acceptedDonorPhone ?: ""
+    val isConfirmed = request.requesterConfirmed
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -413,6 +468,7 @@ fun AcceptedRequestCard(
         border = androidx.compose.foundation.BorderStroke(1.dp, SuccessGreen.copy(alpha = 0.5f))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            // Header Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -433,15 +489,26 @@ fun AcceptedRequestCard(
                     }
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = if (request.status == "COMPLETED") "Donation Completed" else "Request Accepted",
+                        text = if (request.status == "COMPLETED") "Donation Completed" else "Donor Accepted Request",
                         fontWeight = FontWeight.Bold,
                         color = SuccessGreen,
                         fontSize = 14.sp
                     )
                 }
 
-                val timeStr = SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault()).format(Date(request.timestamp))
-                Text(text = timeStr, fontSize = 11.sp, color = TextMuted)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val timeStr = SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault()).format(Date(request.timestamp))
+                    Text(text = timeStr, fontSize = 11.sp, color = TextMuted)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    IconButton(onClick = onDelete, modifier = Modifier.size(28.dp)) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete",
+                            tint = TextMuted,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -453,52 +520,132 @@ fun AcceptedRequestCard(
                 color = TextPrimary
             )
 
-            val donorName = request.acceptedDonorName ?: "ashik"
-            val donorPhone = request.acceptedDonorPhone ?: "01969114300"
-            Text(
-                text = "🩸 Donor: $donorName ($donorPhone)",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                color = SuccessGreen
-            )
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Donor Info & Phone Reveal status
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(if (isConfirmed) Color(0xFF0D2818) else Color(0xFF1F2430), RoundedCornerShape(10.dp))
+                    .padding(12.dp)
+            ) {
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "🩸 ডোনার: $donorName",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = SuccessGreen
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "• রিকোয়েস্ট গ্রহণ করেছেন",
+                            fontSize = 12.sp,
+                            color = TextSecondary
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    if (!isConfirmed) {
+                        // Phone is hidden until Requester clicks Accept
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = "Locked",
+                                tint = Color(0xFFFBBF24),
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "ফোন নম্বর: 🔒 গোপন রাখা হয়েছে (নিচে 'Accept' বাটনে চাপলে নম্বর দেখা যাবে)",
+                                fontSize = 12.sp,
+                                color = Color(0xFFFBBF24),
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    } else {
+                        // Phone is revealed
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Phone,
+                                contentDescription = "Phone",
+                                tint = SuccessGreen,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "ফোন নম্বর: $donorPhone",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White
+                            )
+                        }
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+            // Buttons according to acceptance status
+            if (!isConfirmed) {
+                // Requester must click "Accept Donor" to reveal phone and call options
                 Button(
-                    onClick = onCall,
-                    modifier = Modifier.weight(1f).height(42.dp),
+                    onClick = onAcceptDonor,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp)
+                        .testTag("accept_donor_button"),
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen)
                 ) {
-                    Icon(Icons.Default.Call, contentDescription = "Call", modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Call", fontWeight = FontWeight.Bold, color = Color.White)
+                    Icon(Icons.Default.Check, contentDescription = "Accept Donor", modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Accept Donor (ডোনার গ্রহণ করুন)",
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        fontSize = 14.sp
+                    )
                 }
-
-                OutlinedButton(
-                    onClick = onSms,
-                    modifier = Modifier.weight(1f).height(42.dp),
-                    shape = RoundedCornerShape(10.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF38BDF8)),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF38BDF8))
+            } else {
+                // When accepted, phone is shown with direct CALL button
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(Icons.Default.Message, contentDescription = "SMS", modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("SMS", fontWeight = FontWeight.Bold)
-                }
-
-                if (request.status != "COMPLETED") {
                     Button(
-                        onClick = onComplete,
-                        modifier = Modifier.weight(1.2f).height(42.dp),
+                        onClick = onCall,
+                        modifier = Modifier.weight(1.2f).height(42.dp).testTag("call_donor_button"),
                         shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = CrimsonPrimary)
+                        colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen)
                     ) {
-                        Text("Complete", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 12.sp)
+                        Icon(Icons.Default.Call, contentDescription = "Call", modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("সরাসরি কল করুন", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 13.sp)
+                    }
+
+                    OutlinedButton(
+                        onClick = onSms,
+                        modifier = Modifier.weight(0.9f).height(42.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF38BDF8)),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF38BDF8))
+                    ) {
+                        Icon(Icons.Default.Message, contentDescription = "SMS", modifier = Modifier.size(15.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("SMS", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    }
+
+                    if (request.status != "COMPLETED") {
+                        Button(
+                            onClick = onComplete,
+                            modifier = Modifier.weight(1f).height(42.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = CrimsonPrimary)
+                        ) {
+                            Text("Complete", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 12.sp)
+                        }
                     }
                 }
             }
@@ -507,7 +654,10 @@ fun AcceptedRequestCard(
 }
 
 @Composable
-fun RejectedRequestCard(request: BloodRequest) {
+fun RejectedRequestCard(
+    request: BloodRequest,
+    onDelete: () -> Unit
+) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -537,7 +687,19 @@ fun RejectedRequestCard(request: BloodRequest) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(text = "Request Declined", color = TextSecondary, fontSize = 13.sp)
                 }
-                Text(text = "Declined", color = CrimsonPrimary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "Declined", color = CrimsonPrimary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    IconButton(onClick = onDelete, modifier = Modifier.size(28.dp)) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete",
+                            tint = TextMuted,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
             }
             Spacer(modifier = Modifier.height(6.dp))
             Text(text = "Location: ${request.location}", fontSize = 12.sp, color = TextMuted)

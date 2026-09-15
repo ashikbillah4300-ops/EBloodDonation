@@ -22,7 +22,8 @@ data class DonorUser(
     val isEnabled: Boolean = true,
     val alarmSoundEnabled: Boolean = true,
     val alarmVibrationEnabled: Boolean = true,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val distanceKm: Double? = null
 )
 
 @Entity(tableName = "blood_requests")
@@ -39,7 +40,8 @@ data class BloodRequest(
     val status: String = "PENDING", // PENDING, ACCEPTED, REJECTED, COMPLETED, CANCELLED
     val acceptedDonorName: String? = null,
     val acceptedDonorPhone: String? = null,
-    val isUrgentAlertActive: Boolean = false
+    val isUrgentAlertActive: Boolean = false,
+    val requesterConfirmed: Boolean = false
 )
 
 @Entity(tableName = "donation_records")

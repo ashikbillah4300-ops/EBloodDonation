@@ -344,7 +344,8 @@ object BackendNetworkManager {
                             status = obj.optString("status", "ACTIVE"),
                             acceptedDonorName = if (obj.isNull("acceptedDonorName")) null else obj.optString("acceptedDonorName"),
                             acceptedDonorPhone = if (obj.isNull("acceptedDonorPhone")) null else obj.optString("acceptedDonorPhone"),
-                            isUrgentAlertActive = true
+                            isUrgentAlertActive = true,
+                            requesterConfirmed = obj.optBoolean("requesterConfirmed", false)
                         )
                     )
                 }
@@ -364,7 +365,8 @@ object BackendNetworkManager {
         requestId: Long,
         status: String,
         acceptedDonorName: String? = null,
-        acceptedDonorPhone: String? = null
+        acceptedDonorPhone: String? = null,
+        requesterConfirmed: Boolean? = null
     ): Boolean = withContext(Dispatchers.IO) {
         val baseUrl = sanitizeUrl(rawUrl)
         try {
@@ -372,6 +374,7 @@ object BackendNetworkManager {
                 put("status", status)
                 if (acceptedDonorName != null) put("acceptedDonorName", acceptedDonorName)
                 if (acceptedDonorPhone != null) put("acceptedDonorPhone", acceptedDonorPhone)
+                if (requesterConfirmed != null) put("requesterConfirmed", requesterConfirmed)
             }
 
             val builder = Request.Builder()
@@ -392,12 +395,43 @@ object BackendNetworkManager {
     }
 
     /**
+     * Delete blood request on PostgreSQL backend
+     */
+    suspend fun deleteBloodRequest(
+        rawUrl: String,
+        authToken: String?,
+        requestId: Long
+    ): Boolean = withContext(Dispatchers.IO) {
+        val baseUrl = sanitizeUrl(rawUrl)
+        try {
+            val builder = Request.Builder()
+                .url("$baseUrl/api/blood-requests/$requestId")
+                .header("Accept", "application/json")
+                .delete()
+
+            if (!authToken.isNullOrBlank()) {
+                builder.header("Authorization", "Bearer $authToken")
+            }
+
+            client.newCall(builder.build()).execute().use { response ->
+                response.isSuccessful
+            }
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /**
      * Fetch registered donors from PostgreSQL backend
      */
     suspend fun fetchDonors(
         rawUrl: String,
         bloodGroup: String? = null,
-        location: String? = null
+        location: String? = null,
+        excludePhone: String? = null,
+        latitude: Double? = null,
+        longitude: Double? = null,
+        nearMe: Boolean = false
     ): List<DonorUser> = withContext(Dispatchers.IO) {
         val baseUrl = sanitizeUrl(rawUrl)
         val list = mutableListOf<DonorUser>()
@@ -409,6 +443,15 @@ object BackendNetworkManager {
             }
             if (!location.isNullOrBlank() && location != "ALL") {
                 urlBuilder.append("&location=").append(location)
+            }
+            if (!excludePhone.isNullOrBlank()) {
+                urlBuilder.append("&excludePhone=").append(excludePhone.trim())
+            }
+            if (latitude != null && longitude != null) {
+                urlBuilder.append("&latitude=").append(latitude).append("&longitude=").append(longitude)
+            }
+            if (nearMe) {
+                urlBuilder.append("&nearMe=true")
             }
 
             val request = Request.Builder()
@@ -439,7 +482,8 @@ object BackendNetworkManager {
                             isAvailable = obj.optBoolean("isAvailable", true),
                             isEnabled = obj.optBoolean("isEnabled", true),
                             alarmSoundEnabled = obj.optBoolean("alarmSoundEnabled", true),
-                            alarmVibrationEnabled = obj.optBoolean("alarmVibrationEnabled", true)
+                            alarmVibrationEnabled = obj.optBoolean("alarmVibrationEnabled", true),
+                            distanceKm = if (obj.has("distanceKm") && !obj.isNull("distanceKm")) obj.optDouble("distanceKm") else null
                         )
                     )
                 }

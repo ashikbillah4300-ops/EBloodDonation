@@ -62,6 +62,10 @@ const BloodRequest = sequelize.define('BloodRequest', {
   selectedDonorCount: {
     type: DataTypes.INTEGER,
     defaultValue: 0
+  },
+  requesterConfirmed: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   }
 }, {
   tableName: 'blood_requests',

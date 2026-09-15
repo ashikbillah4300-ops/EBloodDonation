@@ -23,6 +23,9 @@ interface AppDao {
     @Query("SELECT * FROM donors WHERE phone = :phone LIMIT 1")
     suspend fun getDonorByPhone(phone: String): DonorUser?
 
+    @Query("SELECT * FROM donors WHERE isCurrentUser = 0 AND bloodGroup = :bloodGroup AND isAvailable = 1 AND phone != :excludePhone")
+    fun getAvailableDonorsByBloodGroup(bloodGroup: String, excludePhone: String): Flow<List<DonorUser>>
+
     @Query("SELECT * FROM donors WHERE isCurrentUser = 0 AND bloodGroup = :bloodGroup AND isAvailable = 1")
     fun getAvailableDonorsByBloodGroup(bloodGroup: String): Flow<List<DonorUser>>
 
@@ -68,6 +71,15 @@ interface AppDao {
 
     @Delete
     suspend fun deleteRequest(request: BloodRequest)
+
+    @Query("DELETE FROM blood_requests WHERE id = :id")
+    suspend fun deleteRequestById(id: Long)
+
+    @Query("DELETE FROM blood_requests WHERE timestamp < :cutoffTimestamp")
+    suspend fun deleteRequestsOlderThan(cutoffTimestamp: Long)
+
+    @Query("DELETE FROM blood_requests")
+    suspend fun clearAllRequests()
 
     // Donation Records
     @Query("SELECT * FROM donation_records WHERE role = :role ORDER BY timestamp DESC")

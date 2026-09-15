@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -86,6 +87,7 @@ fun RequestStep1Screen(viewModel: EBloodViewModel) {
     val lat by viewModel.reqLatitude.collectAsStateWithLifecycle()
     val lng by viewModel.reqLongitude.collectAsStateWithLifecycle()
     val user by viewModel.currentUser.collectAsStateWithLifecycle()
+    val isNearMe by viewModel.isNearMeSelected.collectAsStateWithLifecycle()
 
     Box(
         modifier = Modifier
@@ -133,56 +135,198 @@ fun RequestStep1Screen(viewModel: EBloodViewModel) {
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "Where is blood needed?",
-                fontSize = 24.sp,
+                text = "রক্তদানের স্থান নির্বাচন করুন",
+                fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary
             )
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "Set the location where the patient needs blood (hospital, clinic, etc.)",
+                text = "Near Me অথবা নির্দিষ্ট হাসপাতাল/ঠিকানা নির্বাচন করুন",
                 fontSize = 13.sp,
                 color = TextSecondary
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Location Set - Tap to update button
+            // Option 1: "Near Me / আমার কাছের জায়গা"
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(14.dp))
                     .clickable {
-                        viewModel.reqLocation.value = "Uttara, Dhaka, Dhaka District"
-                        viewModel.reqLatitude.value = 23.8786
-                        viewModel.reqLongitude.value = 90.3766
+                        viewModel.selectNearMeOption()
                     }
-                    .testTag("tap_to_update_location_button"),
-                color = Color(0xFF142426),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.6f))
+                    .testTag("option_near_me"),
+                color = if (isNearMe) Color(0xFF0F2E24) else DarkSurfaceCard,
+                border = androidx.compose.foundation.BorderStroke(
+                    1.5.dp,
+                    if (isNearMe) SuccessGreen else DarkSurfaceBorder
+                )
             ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = "📍 Location Set — Tap to Update",
-                        color = SuccessGreen,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 14.sp
-                    )
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .background(if (isNearMe) SuccessGreen else DarkSurfaceElevated, CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(text = "📍", fontSize = 18.sp)
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "Near Me / আমার কাছের জায়গা",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    color = if (isNearMe) SuccessGreen else TextPrimary
+                                )
+                                Text(
+                                    text = "কাছের ডোনাররা দূরত্ব অনুযায়ী সিরিয়াল হবে",
+                                    fontSize = 12.sp,
+                                    color = TextSecondary
+                                )
+                            }
+                        }
+
+                        if (isNearMe) {
+                            Box(
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .background(SuccessGreen, CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = "Selected",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    if (isNearMe) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFF133B2E), RoundedCornerShape(8.dp))
+                                .padding(10.dp)
+                        ) {
+                            Text(
+                                text = "✅ Near Me নির্বাচিত: যে ডোনার সবচেয়ে কাছে থাকবে সে ১ম (1st), তারপর ২য় (2nd), তারপর ৩য় (3rd) সিরিয়ালে আসবে।",
+                                fontSize = 12.sp,
+                                color = Color(0xFFA7F3D0),
+                                lineHeight = 16.sp
+                            )
+                        }
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Coordinates pill
+            // Option 2: "Address লিখব / নির্দিষ্ট ঠিকানা"
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .clickable {
+                        viewModel.isNearMeSelected.value = false
+                    }
+                    .testTag("option_custom_address"),
+                color = if (!isNearMe) Color(0xFF1E2638) else DarkSurfaceCard,
+                border = androidx.compose.foundation.BorderStroke(
+                    1.5.dp,
+                    if (!isNearMe) InfoBlue else DarkSurfaceBorder
+                )
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .background(if (!isNearMe) InfoBlue else DarkSurfaceElevated, CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(text = "🏥", fontSize = 18.sp)
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "Address লিখব / নির্দিষ্ট ঠিকানা",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    color = if (!isNearMe) InfoBlue else TextPrimary
+                                )
+                                Text(
+                                    text = "হাসপাতাল বা ক্লিনিকে রক্ত প্রয়োজন",
+                                    fontSize = 12.sp,
+                                    color = TextSecondary
+                                )
+                            }
+                        }
+
+                        if (!isNearMe) {
+                            Box(
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .background(InfoBlue, CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = "Selected",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    if (!isNearMe) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        OutlinedTextField(
+                            value = location,
+                            onValueChange = { viewModel.setCustomAddress(it) },
+                            placeholder = { Text("হাসপাতাল বা এলাকার নাম লিখুন (যেমন: ঢাকা মেডিকেল)") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("request_location_field"),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = DarkSurfaceCard,
+                                unfocusedContainerColor = DarkSurfaceCard,
+                                focusedBorderColor = InfoBlue,
+                                unfocusedBorderColor = DarkSurfaceBorder,
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary
+                            )
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Coordinates info
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -192,12 +336,12 @@ fun RequestStep1Screen(viewModel: EBloodViewModel) {
                     Icon(
                         imageVector = Icons.Default.ArrowUpward,
                         contentDescription = null,
-                        tint = CrimsonPrimary,
+                        tint = SuccessGreen,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "%.4f, %.4f".format(lat, lng),
+                        text = "GPS: %.4f, %.4f".format(lat, lng),
                         color = SuccessGreen,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
@@ -207,56 +351,19 @@ fun RequestStep1Screen(viewModel: EBloodViewModel) {
                 TextButton(
                     onClick = {
                         user?.let {
-                            viewModel.reqLocation.value = it.location
                             viewModel.reqLatitude.value = it.latitude
                             viewModel.reqLongitude.value = it.longitude
+                            if (!isNearMe) {
+                                viewModel.reqLocation.value = it.location
+                            }
                         }
                     }
                 ) {
-                    Text("📍 Use my profile location", color = CrimsonPrimary, fontSize = 12.sp)
+                    Text("📍 প্রোফাইল লোকেশন ব্যবহার করুন", color = CrimsonPrimary, fontSize = 12.sp)
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Text(
-                text = "ADDRESS",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextMuted,
-                letterSpacing = 1.sp
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "Location / Address *",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = TextPrimary
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            OutlinedTextField(
-                value = location,
-                onValueChange = { viewModel.reqLocation.value = it },
-                placeholder = { Text("Enter patient location, hospital or clinic") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("request_location_field"),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = DarkSurfaceCard,
-                    unfocusedContainerColor = DarkSurfaceCard,
-                    focusedBorderColor = CrimsonPrimary,
-                    unfocusedBorderColor = DarkSurfaceBorder,
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary
-                )
-            )
-
-            Spacer(modifier = Modifier.height(36.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
             Button(
                 onClick = { viewModel.goToBloodGroupStep() },
@@ -673,7 +780,7 @@ fun RequestStep3Screen(viewModel: EBloodViewModel) {
                         .padding(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    items(filteredDonors) { donor ->
+                    itemsIndexed(filteredDonors) { index, donor ->
                         val isSelected = selectedIds.contains(donor.id)
                         Surface(
                             modifier = Modifier
@@ -695,18 +802,40 @@ fun RequestStep3Screen(viewModel: EBloodViewModel) {
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
+                                    // Serial rank badge (#1, #2, #3...)
                                     Box(
                                         modifier = Modifier
-                                            .size(38.dp)
-                                            .background(SuccessGreen, CircleShape),
+                                            .size(40.dp)
+                                            .background(
+                                                when (index) {
+                                                    0 -> Color(0xFFD97706) // 1st - Gold/Amber
+                                                    1 -> Color(0xFF0284C7) // 2nd - Sky Blue
+                                                    2 -> Color(0xFF10B981) // 3rd - Emerald
+                                                    else -> DarkSurfaceElevated
+                                                },
+                                                CircleShape
+                                            ),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Text(
-                                            text = donor.bloodGroup,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White,
-                                            fontSize = 13.sp
-                                        )
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(
+                                                text = "#${index + 1}",
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = Color.White,
+                                                fontSize = 13.sp
+                                            )
+                                            Text(
+                                                text = when (index) {
+                                                    0 -> "1st"
+                                                    1 -> "2nd"
+                                                    2 -> "3rd"
+                                                    else -> "${index + 1}th"
+                                                },
+                                                fontSize = 8.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color.White.copy(alpha = 0.9f)
+                                            )
+                                        }
                                     }
 
                                     Spacer(modifier = Modifier.width(12.dp))
@@ -726,32 +855,52 @@ fun RequestStep3Screen(viewModel: EBloodViewModel) {
                                                     .padding(horizontal = 5.dp, vertical = 2.dp)
                                             ) {
                                                 Text(
-                                                    text = "Active",
+                                                    text = donor.bloodGroup,
                                                     fontSize = 9.sp,
                                                     fontWeight = FontWeight.Bold,
                                                     color = SuccessGreen
                                                 )
                                             }
                                         }
+
                                         Text(
                                             text = donor.location,
                                             fontSize = 12.sp,
                                             color = TextSecondary
                                         )
+
                                         Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(
-                                                Icons.Default.ArrowUpward,
-                                                contentDescription = null,
-                                                tint = SuccessGreen,
-                                                modifier = Modifier.size(12.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(2.dp))
-                                            Text(
-                                                text = "Registered & Logged in",
-                                                fontSize = 11.sp,
-                                                color = SuccessGreen,
-                                                fontWeight = FontWeight.Medium
-                                            )
+                                            donor.distanceKm?.let { dist ->
+                                                Text(
+                                                    text = "📍 $dist কিমি দূরে (${when(index) {
+                                                        0 -> "সবচেয়ে কাছে 1st"
+                                                        1 -> "২য় নিকটবর্তী 2nd"
+                                                        2 -> "৩য় নিকটবর্তী 3rd"
+                                                        else -> "${index + 1}তম"
+                                                    }})",
+                                                    fontSize = 11.sp,
+                                                    color = when (index) {
+                                                        0 -> Color(0xFFFBBF24)
+                                                        1 -> Color(0xFF38BDF8)
+                                                        else -> SuccessGreen
+                                                    },
+                                                    fontWeight = FontWeight.SemiBold
+                                                )
+                                            } ?: run {
+                                                Icon(
+                                                    Icons.Default.ArrowUpward,
+                                                    contentDescription = null,
+                                                    tint = SuccessGreen,
+                                                    modifier = Modifier.size(12.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(2.dp))
+                                                Text(
+                                                    text = "Registered Donor",
+                                                    fontSize = 11.sp,
+                                                    color = SuccessGreen,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                            }
                                         }
                                     }
                                 }

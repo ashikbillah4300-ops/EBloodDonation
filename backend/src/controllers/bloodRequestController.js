@@ -2,9 +2,26 @@ const { Op } = require('sequelize');
 const { BloodRequest, User, NotificationToken, Donation } = require('../models');
 const { getCompatibleDonorGroups, sendEmergencyBloodAlert } = require('../services/firebaseService');
 
+// Auto cleanup helper: Delete notifications/requests older than 2 days (48 hours)
+async function autoCleanOldRequests() {
+  try {
+    const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
+    await BloodRequest.destroy({
+      where: {
+        createdAt: { [Op.lt]: twoDaysAgo }
+      }
+    });
+  } catch (err) {
+    // Non-blocking cleanup
+  }
+}
+
 // POST /api/blood-requests
 const createBloodRequest = async (req, res) => {
   try {
+    // Automatically purge old requests (2 days)
+    autoCleanOldRequests();
+
     const {
       requesterName,
       requesterPhone,
@@ -103,6 +120,8 @@ const createBloodRequest = async (req, res) => {
 // GET /api/blood-requests and GET /admin/blood-requests
 const getAllBloodRequests = async (req, res) => {
   try {
+    autoCleanOldRequests();
+
     const { status, bloodGroup, location, search, limit = 50, offset = 0 } = req.query;
 
     const where = {};
@@ -168,7 +187,7 @@ const getBloodRequestById = async (req, res) => {
 const updateRequestStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, acceptedDonorName, acceptedDonorPhone, note } = req.body;
+    const { status, acceptedDonorName, acceptedDonorPhone, note, requesterConfirmed } = req.body;
 
     const request = await BloodRequest.findByPk(id);
     if (!request) {
@@ -189,6 +208,7 @@ const updateRequestStatus = async (req, res) => {
     if (acceptedDonorName !== undefined) request.acceptedDonorName = acceptedDonorName;
     if (acceptedDonorPhone !== undefined) request.acceptedDonorPhone = acceptedDonorPhone;
     if (note !== undefined) request.note = note;
+    if (requesterConfirmed !== undefined) request.requesterConfirmed = requesterConfirmed;
 
     await request.save();
 

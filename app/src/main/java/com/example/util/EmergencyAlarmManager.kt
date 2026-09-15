@@ -107,7 +107,7 @@ object EmergencyAlarmManager {
     ) {
         stopAlarm()
 
-        val totalDurationSeconds = 180 // 3 minutes as requested
+        val totalDurationSeconds = 30 // Max 30 seconds alert as requested
         _alarmState.value = ActiveAlarmState.DonorAlarm(
             requestId = requestId,
             bloodGroup = bloodGroup,
@@ -120,7 +120,7 @@ object EmergencyAlarmManager {
         showDonorNotification(context, requestId, bloodGroup, location)
         startAlarmAudioAndVibration(context, soundEnabled, vibrationEnabled, isUrgentSiren = true)
 
-        // Count down for 3 minutes (180s)
+        // Count down for 30 seconds max
         toneJob = CoroutineScope(Dispatchers.Default).launch {
             for (sec in totalDurationSeconds downTo 1) {
                 if (!isActive) break

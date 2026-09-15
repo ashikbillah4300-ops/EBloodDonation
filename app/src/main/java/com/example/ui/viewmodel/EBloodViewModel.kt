@@ -79,6 +79,10 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
             repository.initializeDefaultSettingsIfEmpty()
             repository.seedInitialDataIfNeeded()
 
+            // Automatically purge notifications/requests older than 2 days (48 hours)
+            val twoDaysCutoff = System.currentTimeMillis() - (48 * 60 * 60 * 1000L)
+            repository.clearOldRequests(twoDaysCutoff)
+
             // Pre-populate admin settings editing state from loaded settings
             launch {
                 appSettingsList.collect { list ->
@@ -304,6 +308,8 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
     var reqLatitude = MutableStateFlow(23.8786)
     var reqLongitude = MutableStateFlow(90.3766)
     var reqBloodGroup = MutableStateFlow("O+")
+    var isNearMeSelected = MutableStateFlow(false)
+    var reqAddressInput = MutableStateFlow("")
     var availableDonors = MutableStateFlow<List<DonorUser>>(emptyList())
     var selectedDonorIds = MutableStateFlow<Set<Long>>(emptySet())
     var donorSearchQuery = MutableStateFlow("")
@@ -649,6 +655,17 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun calculateDistanceKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+        val r = 6371.0
+        val dLat = Math.toRadians(lat2 - lat1)
+        val dLon = Math.toRadians(lon2 - lon1)
+        val a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2)
+        val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+        return Math.round(r * c * 10.0) / 10.0
+    }
+
     // Blood Request Creation Flow
     fun startCreateBloodRequest() {
         val user = currentUser.value
@@ -657,9 +674,27 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
             _currentScreen.value = Screen.AUTH
             return
         }
+        isNearMeSelected.value = false
+        reqAddressInput.value = ""
         reqLocation.value = user?.location ?: sessionManager.getLocation().ifEmpty { "Uttara, Dhaka, Dhaka District" }
+        reqLatitude.value = user?.latitude ?: 23.8786
+        reqLongitude.value = user?.longitude ?: 90.3766
         reqBloodGroup.value = "O+"
         _currentScreen.value = Screen.CREATE_REQUEST_STEP1
+    }
+
+    fun selectNearMeOption() {
+        isNearMeSelected.value = true
+        val user = currentUser.value
+        reqLocation.value = "আমার কাছের জায়গা (Near Me)"
+        reqLatitude.value = user?.latitude ?: 23.8786
+        reqLongitude.value = user?.longitude ?: 90.3766
+    }
+
+    fun setCustomAddress(address: String) {
+        isNearMeSelected.value = false
+        reqAddressInput.value = address
+        reqLocation.value = address.ifBlank { "Uttara, Dhaka" }
     }
 
     fun goToBloodGroupStep() {
@@ -668,10 +703,52 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
 
     fun searchDonorsForGroup(group: String) {
         reqBloodGroup.value = group
+        val user = currentUser.value
+        val currentPhone = (user?.phone?.ifBlank { null } ?: sessionManager.getPhone()).trim()
+        val currentUserId = user?.id
+
         viewModelScope.launch {
-            repository.getAvailableDonorsByBloodGroup(group).collect { donors ->
-                availableDonors.value = donors
-                selectedDonorIds.value = donors.map { it.id }.toSet() // default select all
+            repository.getAvailableDonorsByBloodGroup(group).collect { localDonors ->
+                // STRICT REQUIREMENT: Requester's own name/phone must NEVER appear in donor list
+                val filtered = localDonors.filter { donor ->
+                    !donor.isCurrentUser &&
+                    (currentPhone.isEmpty() || donor.phone.trim() != currentPhone) &&
+                    (currentUserId == null || donor.id != currentUserId)
+                }
+
+                // Also fetch online donors if backend is configured
+                val onlineUrl = sessionManager.getBackendUrl()
+                val candidateDonors = if (onlineUrl.isNotBlank()) {
+                    try {
+                        val remoteDonors = BackendNetworkManager.fetchDonors(
+                            rawUrl = onlineUrl,
+                            bloodGroup = group,
+                            excludePhone = currentPhone,
+                            latitude = reqLatitude.value,
+                            longitude = reqLongitude.value,
+                            nearMe = isNearMeSelected.value
+                        )
+                        val remoteFiltered = remoteDonors.filter { d ->
+                            currentPhone.isEmpty() || d.phone.trim() != currentPhone
+                        }
+                        if (remoteFiltered.isNotEmpty()) remoteFiltered else filtered
+                    } catch (e: Exception) {
+                        filtered
+                    }
+                } else {
+                    filtered
+                }
+
+                // Calculate distance and sort ascending: closest donor is #1, 2nd closest is #2, 3rd is #3...
+                val reqLat = reqLatitude.value
+                val reqLng = reqLongitude.value
+                val sortedWithDistances = candidateDonors.map { donor ->
+                    val dist = donor.distanceKm ?: calculateDistanceKm(reqLat, reqLng, donor.latitude, donor.longitude)
+                    donor.copy(distanceKm = dist)
+                }.sortedBy { it.distanceKm ?: 999.0 }
+
+                availableDonors.value = sortedWithDistances
+                selectedDonorIds.value = sortedWithDistances.map { it.id }.toSet()
                 _currentScreen.value = Screen.CREATE_REQUEST_STEP3
             }
         }
@@ -815,6 +892,62 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
             }
 
             activeInboxTab.value = InboxTab.REJECTED
+        }
+    }
+
+    // Requester confirms/accepts donor from Inbox and reveals donor phone number
+    fun confirmDonorAndRevealPhone(request: BloodRequest) {
+        EmergencyAlarmManager.stopAlarm()
+        viewModelScope.launch {
+            val updated = request.copy(requesterConfirmed = true)
+            repository.updateBloodRequest(updated)
+
+            val backendUrl = sessionManager.getBackendUrl()
+            val backendToken = sessionManager.getBackendToken()
+            if (backendUrl.isNotBlank()) {
+                try {
+                    BackendNetworkManager.updateBloodRequestStatus(
+                        rawUrl = backendUrl,
+                        authToken = backendToken,
+                        requestId = request.id,
+                        status = request.status,
+                        acceptedDonorName = request.acceptedDonorName,
+                        acceptedDonorPhone = request.acceptedDonorPhone,
+                        requesterConfirmed = true
+                    )
+                } catch (_: Exception) {}
+            }
+
+            revealedRequest.value = updated
+        }
+    }
+
+    // Manual delete notification/request
+    fun deleteBloodRequest(requestId: Long) {
+        viewModelScope.launch {
+            repository.deleteBloodRequest(requestId)
+            val backendUrl = sessionManager.getBackendUrl()
+            val backendToken = sessionManager.getBackendToken()
+            if (backendUrl.isNotBlank()) {
+                try {
+                    BackendNetworkManager.deleteBloodRequest(backendUrl, backendToken, requestId)
+                } catch (_: Exception) {}
+            }
+        }
+    }
+
+    // Clear all notifications manually
+    fun clearAllNotifications() {
+        viewModelScope.launch {
+            repository.clearAllRequests()
+        }
+    }
+
+    // Auto purge older than 2 days
+    fun purgeOldRequests() {
+        viewModelScope.launch {
+            val twoDaysCutoff = System.currentTimeMillis() - (48 * 60 * 60 * 1000L)
+            repository.clearOldRequests(twoDaysCutoff)
         }
     }
 

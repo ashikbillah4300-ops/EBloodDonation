@@ -20,6 +20,9 @@ class EBloodRepository(private val dao: AppDao) {
     fun getAvailableDonorsByBloodGroup(bloodGroup: String): Flow<List<DonorUser>> =
         dao.getAvailableDonorsByBloodGroup(bloodGroup)
 
+    fun getAvailableDonorsByBloodGroup(bloodGroup: String, excludePhone: String): Flow<List<DonorUser>> =
+        dao.getAvailableDonorsByBloodGroup(bloodGroup, excludePhone)
+
     suspend fun getCurrentUser(): DonorUser? = dao.getCurrentUser()
 
     suspend fun getDonorByPhone(phone: String): DonorUser? = dao.getDonorByPhone(phone)
@@ -93,6 +96,18 @@ class EBloodRepository(private val dao: AppDao) {
 
     suspend fun getRequestById(id: Long): BloodRequest? {
         return dao.getRequestById(id)
+    }
+
+    suspend fun deleteBloodRequest(id: Long) {
+        dao.deleteRequestById(id)
+    }
+
+    suspend fun clearOldRequests(cutoffTimestamp: Long) {
+        dao.deleteRequestsOlderThan(cutoffTimestamp)
+    }
+
+    suspend fun clearAllRequests() {
+        dao.clearAllRequests()
     }
 
     suspend fun addDonationRecord(record: DonationRecord) {

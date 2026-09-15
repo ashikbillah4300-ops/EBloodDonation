@@ -38,7 +38,15 @@ class EBloodFirebaseMessagingService : FirebaseMessagingService() {
                 val requesterName = data["requesterName"] ?: "জরুরি গ্রহীতা"
                 val requesterPhone = data["requesterPhone"] ?: ""
 
-                // Trigger 3-minute persistent siren & heads-up notification as specified in specs
+                val sessionManager = SessionManager(applicationContext)
+                val myPhone = sessionManager.getPhone()
+                // Prevent self-alerting: Requester must never receive alert for their own blood request
+                if (!myPhone.isNullOrBlank() && !requesterPhone.isBlank() && myPhone.trim() == requesterPhone.trim()) {
+                    Log.d(TAG, "Ignoring self blood request alert for phone $myPhone")
+                    return
+                }
+
+                // Trigger 30-second siren & heads-up notification
                 EmergencyAlarmManager.triggerDonorEmergencyAlarm(
                     context = applicationContext,
                     requestId = requestId,

@@ -1,12 +1,46 @@
 const { Op } = require('sequelize');
 const { User, NotificationToken, Donation } = require('../models');
 
+// Haversine distance formula in KM
+function calculateDistanceKm(lat1, lon1, lat2, lon2) {
+  if (lat1 === undefined || lon1 === undefined || lat2 === undefined || lon2 === undefined) return 9999;
+  const R = 6371; // Radius of Earth in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 // GET /api/users
 const getUsers = async (req, res) => {
   try {
-    const { bloodGroup, location, isAvailable, search, limit = 100, offset = 0 } = req.query;
+    const {
+      bloodGroup,
+      location,
+      isAvailable,
+      search,
+      excludePhone,
+      excludeUserId,
+      latitude,
+      longitude,
+      nearMe,
+      limit = 100,
+      offset = 0
+    } = req.query;
 
     const where = { isEnabled: true };
+
+    // Exclude requester's own phone / userId so they never see themselves as a donor
+    if (excludePhone && excludePhone.trim().length > 0) {
+      where.phone = { [Op.ne]: excludePhone.trim() };
+    }
+    if (excludeUserId) {
+      where.id = { [Op.ne]: excludeUserId };
+    }
 
     if (bloodGroup && bloodGroup !== 'ALL') {
       where.bloodGroup = bloodGroup;
@@ -29,18 +63,37 @@ const getUsers = async (req, res) => {
       ];
     }
 
-    const { count, rows } = await User.findAndCountAll({
+    let { count, rows } = await User.findAndCountAll({
       where,
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [['createdAt', 'DESC']]
     });
 
+    let usersList = rows.map(u => u.toJSON());
+
+    // Sort by distance if Near Me option or coordinates provided
+    const userLat = latitude ? parseFloat(latitude) : (nearMe === 'true' ? 23.8786 : null);
+    const userLng = longitude ? parseFloat(longitude) : (nearMe === 'true' ? 90.3766 : null);
+
+    if (userLat !== null && userLng !== null) {
+      usersList = usersList.map(u => {
+        const dist = calculateDistanceKm(userLat, userLng, parseFloat(u.latitude) || 23.8786, parseFloat(u.longitude) || 90.3766);
+        return {
+          ...u,
+          distanceKm: parseFloat(dist.toFixed(2))
+        };
+      });
+
+      // Sort strictly in ascending order: closest donor is 1st, 2nd, 3rd...
+      usersList.sort((a, b) => a.distanceKm - b.distanceKm);
+    }
+
     return res.status(200).json({
       success: true,
       data: {
         total: count,
-        users: rows
+        users: usersList
       }
     });
   } catch (error) {
