@@ -412,11 +412,12 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">ডিপোজিট মেথড (Payment Gateway)</label>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">পেমেন্ট / ডিপোজিট মেথড (Payment Method)</label>
                 <select id="setting_deposit_method" onchange="onDepositMethodChange()" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-bold focus:outline-none focus:border-rose-500">
-                  <option value="bKash">bKash (বিকাশ Personal)</option>
-                  <option value="Nagad">Nagad (নগদ Personal)</option>
-                  <option value="Rocket">Rocket (রকেট Personal)</option>
+                  <option value="Wallet" selected>Wallet (ওয়ালেট / কমিউনিটি ফান্ড)</option>
+                  <option value="bKash">bKash (বিকাশ)</option>
+                  <option value="Nagad">Nagad (নগদ)</option>
+                  <option value="Rocket">Rocket (রকেট)</option>
                 </select>
               </div>
 
@@ -739,7 +740,7 @@
 
         if (data.success && data.data && data.data.token) {
           authToken = data.data.token;
-          document.getElementById('adminUserName').innerText = data.data.username || 'Ashik Billah';
+          document.getElementById('adminUserName').innerText = data.data.username || 'Administrator';
           document.getElementById('loginPassword').value = '';
           showDashboard();
         } else {
@@ -747,18 +748,8 @@
           alertBox.classList.remove('hidden');
         }
       } catch (err) {
-        // Direct credential check: ashikbillah4300@gmail.com / ashik@2008
-        const cleanUser = username.toLowerCase();
-        if ((cleanUser === 'ashikbillah4300@gmail.com' || cleanUser === 'ashikbillah' || cleanUser === 'admin') && 
-            password === 'ashik@2008') {
-          authToken = 'mock_admin_token_demo';
-          document.getElementById('adminUserName').innerText = 'Ashik Billah';
-          document.getElementById('loginPassword').value = '';
-          showDashboard();
-        } else {
-          alertBox.innerText = 'ভুল পাসওয়ার্ড বা ইউজারনেম! সঠিক পাসওয়ার্ড দিয়ে প্রবেশ করুন।';
-          alertBox.classList.remove('hidden');
-        }
+        alertBox.innerText = 'সার্ভারের সাথে সংযোগ বিচ্ছিন্ন হয়েছে। ইন্টারনেট সংযোগ ও সার্ভার স্ট্যাটাস চেক করুন।';
+        alertBox.classList.remove('hidden');
       }
     });
 

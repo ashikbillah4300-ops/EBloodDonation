@@ -37,7 +37,12 @@ const Donation = sequelize.define('Donation', {
   }
 }, {
   tableName: 'donations',
-  timestamps: true
+  timestamps: true,
+  indexes: [
+    { fields: ['donorId'] },
+    { fields: ['donationDate'] },
+    { fields: ['createdAt'] }
+  ]
 });
 
 module.exports = Donation;

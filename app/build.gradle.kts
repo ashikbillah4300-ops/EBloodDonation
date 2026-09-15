@@ -69,6 +69,17 @@ secrets {
   propertiesFileName = ".env"
   defaultPropertiesFileName = ".env.example"
   ignoreList.add("FIREBASE_APPCHECK_DEBUG_TOKEN")
+  ignoreList.add("PORT")
+  ignoreList.add("NODE_ENV")
+  ignoreList.add("DATABASE_URL")
+  ignoreList.add("JWT_SECRET")
+  ignoreList.add("DEFAULT_ADMIN_USERNAME")
+  ignoreList.add("DEFAULT_ADMIN_EMAIL")
+  ignoreList.add("DEFAULT_ADMIN_PASSWORD")
+  ignoreList.add("FIREBASE_PROJECT_ID")
+  ignoreList.add("FIREBASE_CLIENT_EMAIL")
+  ignoreList.add("FIREBASE_PRIVATE_KEY")
+  ignoreList.add("ALLOWED_ORIGINS")
 }
 
 googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.WARN }
@@ -104,8 +115,9 @@ dependencies {
   // Uncomment to use Firestore:
   // implementation(libs.firebase.firestore)
 
-  // Firebase Auth for Real SMS OTP:
+  // Firebase Auth for Real SMS OTP & FCM Messaging:
   implementation(libs.firebase.auth)
+  implementation(libs.firebase.messaging)
   // implementation(libs.androidx.credentials)
   // implementation(libs.androidx.credentials.play.services)
   // implementation(libs.googleid)

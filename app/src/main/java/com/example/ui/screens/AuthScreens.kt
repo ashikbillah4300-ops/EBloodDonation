@@ -479,8 +479,7 @@ fun OtpVerificationScreen(viewModel: EBloodViewModel) {
             val focusRequester = remember { FocusRequester() }
             val context = LocalContext.current
             val fallbackOtp by viewModel.generatedFallbackOtp.collectAsStateWithLifecycle()
-            val isTestPhone = phone.contains("1969114300")
-            val activeHintCode = if (isTestPhone) "114300" else fallbackOtp
+            val activeHintCode = fallbackOtp
 
             LaunchedEffect(Unit) {
                 focusRequester.requestFocus()

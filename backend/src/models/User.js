@@ -51,10 +51,33 @@ const User = sequelize.define('User', {
   alarmVibrationEnabled: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
+  },
+  fcmToken: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  lastDonationDate: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  contactMethod: {
+    type: DataTypes.STRING(20),
+    defaultValue: 'PHONE'
+  },
+  status: {
+    type: DataTypes.STRING(20),
+    defaultValue: 'ACTIVE'
   }
 }, {
   tableName: 'users',
-  timestamps: true
+  timestamps: true,
+  indexes: [
+    { fields: ['phone'], unique: true },
+    { fields: ['bloodGroup'] },
+    { fields: ['location'] },
+    { fields: ['status'] },
+    { fields: ['createdAt'] }
+  ]
 });
 
 module.exports = User;

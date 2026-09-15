@@ -310,7 +310,7 @@ fun AdminLoginScreen(viewModel: EBloodViewModel) {
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "• Rate-limiting: Brute force lockout enabled after 5 failed attempts.\n• Password is encrypted and protected.\n• Super Admin: ashikbillah4300@gmail.com / ashik@2008",
+                        text = "• Rate-limiting: Brute force lockout enabled after 5 failed attempts.\n• Password is authenticated securely against backend database.\n• Admin email configured via backend environment.",
                         fontSize = 11.sp,
                         color = TextMuted,
                         lineHeight = 16.sp
@@ -1353,13 +1353,13 @@ fun AdminAppControlTab(viewModel: EBloodViewModel) {
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Text(text = "ডিপোজিট মেথড (Payment Gateway):", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.SemiBold)
+                Text(text = "পেমেন্ট / ডিপোজিট মেথড (Payment Method):", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.SemiBold)
                 Spacer(modifier = Modifier.height(6.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    listOf("bKash", "Nagad", "Rocket").forEach { method ->
+                    listOf("Wallet", "bKash", "Nagad", "Rocket").forEach { method ->
                         val isSelected = editDepositMethod.equals(method, ignoreCase = true)
                         Box(
                             modifier = Modifier

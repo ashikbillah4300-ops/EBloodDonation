@@ -22,10 +22,10 @@ class SessionManager(context: Context) {
 
     fun saveSession(
         phone: String,
-        name: String = "Ashik",
-        bloodGroup: String = "O+",
-        location: String = "Uttara, Dhaka, Dhaka District",
-        address: String = "Sector 11, Uttara, Dhaka"
+        name: String = "",
+        bloodGroup: String = "",
+        location: String = "",
+        address: String = ""
     ) {
         prefs.edit()
             .putBoolean(KEY_IS_LOGGED_IN, true)
@@ -74,13 +74,13 @@ class SessionManager(context: Context) {
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        return "01969114300"
+        return ""
     }
 
-    fun getName(): String = prefs.getString(KEY_NAME, "Ashik") ?: "Ashik"
+    fun getName(): String = prefs.getString(KEY_NAME, "") ?: ""
     fun getBloodGroup(): String = prefs.getString(KEY_BLOOD_GROUP, "O+") ?: "O+"
-    fun getLocation(): String = prefs.getString(KEY_LOCATION, "Uttara, Dhaka, Dhaka District") ?: "Uttara, Dhaka, Dhaka District"
-    fun getAddress(): String = prefs.getString(KEY_ADDRESS, "Sector 11, Uttara, Dhaka") ?: "Sector 11, Uttara, Dhaka"
+    fun getLocation(): String = prefs.getString(KEY_LOCATION, "") ?: ""
+    fun getAddress(): String = prefs.getString(KEY_ADDRESS, "") ?: ""
 
     fun getBackendUrl(): String = prefs.getString(KEY_BACKEND_URL, DEFAULT_BACKEND_URL) ?: DEFAULT_BACKEND_URL
 

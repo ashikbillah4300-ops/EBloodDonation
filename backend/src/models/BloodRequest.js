@@ -65,7 +65,13 @@ const BloodRequest = sequelize.define('BloodRequest', {
   }
 }, {
   tableName: 'blood_requests',
-  timestamps: true
+  timestamps: true,
+  indexes: [
+    { fields: ['status'] },
+    { fields: ['bloodGroup'] },
+    { fields: ['location'] },
+    { fields: ['createdAt'] }
+  ]
 });
 
 module.exports = BloodRequest;

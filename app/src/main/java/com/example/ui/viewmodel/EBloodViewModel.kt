@@ -163,8 +163,8 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "01969114300")
 
     val depositMethod: StateFlow<String> = appSettingsList.map { list ->
-        list.find { it.settingKey == "deposit_method" }?.settingValue ?: "bKash"
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "bKash")
+        list.find { it.settingKey == "deposit_method" }?.settingValue ?: "Wallet"
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "Wallet")
 
     val appName: StateFlow<String> = appSettingsList.map { list ->
         list.find { it.settingKey == "app_name" }?.settingValue ?: "EBlood Donation"
@@ -230,7 +230,7 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
     var editContactNumber = MutableStateFlow("01969114300")
     var editSupportNumber = MutableStateFlow("01969114300")
     var editAppName = MutableStateFlow("EBlood Donation")
-    var editDepositMethod = MutableStateFlow("bKash")
+    var editDepositMethod = MutableStateFlow("Wallet")
     var editAppNotice = MutableStateFlow("")
     var editEmergencyNotice = MutableStateFlow("")
     var editMaintenanceMode = MutableStateFlow(false)
@@ -386,7 +386,7 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
             generatedFallbackOtp.value = dynamicOtp
 
             // Deliver notification to device notification tray
-            val ctx = activity ?: getApplication()
+            val ctx: android.content.Context = activity ?: getApplication<Application>()
             OtpNotificationHelper.sendOtpNotification(ctx, dynamicOtp, formattedPhone)
 
             val isEmulator = DeviceUtils.isEmulator()
@@ -477,7 +477,7 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                         if (task.isSuccessful) {
                             finishAuthFlow(formattedPhone)
                         } else {
-                            if (code == generatedFallbackOtp.value || code == "114300") {
+                            if (code == generatedFallbackOtp.value) {
                                 finishAuthFlow(formattedPhone)
                             } else {
                                 authErrorMessage.value = "The OTP code you entered is invalid. Please check your SMS or notification."
@@ -486,7 +486,7 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                     }
                 return
             } catch (e: Exception) {
-                if (code == generatedFallbackOtp.value || code == "114300") {
+                if (code == generatedFallbackOtp.value) {
                     isVerifyingOtp.value = false
                     finishAuthFlow(formattedPhone)
                     return
@@ -497,8 +497,8 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
 
-        // Dynamic 6-digit OTP verification (from Notification or configured Firebase test code)
-        if (code == generatedFallbackOtp.value || code == "114300") {
+        // Dynamic 6-digit OTP verification (from Notification or configured carrier test code)
+        if (code == generatedFallbackOtp.value) {
             viewModelScope.launch {
                 delay(400)
                 isVerifyingOtp.value = false
@@ -706,32 +706,38 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
         sentRequestDonorCount.value = donorCount
 
         viewModelScope.launch {
-            val reqId = repository.createBloodRequest(
-                BloodRequest(
-                    requesterName = user?.name ?: sessionManager.getName().ifEmpty { "Ashik" },
-                    requesterPhone = user?.phone ?: sessionManager.getPhone().ifEmpty { "01969114300" },
-                    bloodGroup = reqBloodGroup.value,
-                    location = reqLocation.value,
-                    latitude = reqLatitude.value,
-                    longitude = reqLongitude.value,
-                    selectedDonorCount = donorCount,
-                    status = "PENDING",
-                    isUrgentAlertActive = true
-                )
-            )
+            val reqName = user?.name?.ifBlank { null } ?: sessionManager.getName().ifBlank { "Emergency Requester" }
+            val reqPhone = user?.phone?.ifBlank { null } ?: sessionManager.getPhone().ifBlank { "" }
 
-            // Requirement 4: Donors receive an urgent alarm notification playing continuous 3-min alarm and vibration
-            // Trigger emergency alarm for the active session so the user can test the donor's experience
-            EmergencyAlarmManager.triggerDonorEmergencyAlarm(
-                context = getApplication(),
-                requestId = reqId,
+            val localRequest = BloodRequest(
+                requesterName = reqName,
+                requesterPhone = reqPhone,
                 bloodGroup = reqBloodGroup.value,
                 location = reqLocation.value,
-                requesterName = user?.name ?: "Ashik",
-                requesterPhone = user?.phone ?: "01969114300",
-                soundEnabled = user?.alarmSoundEnabled ?: true,
-                vibrationEnabled = user?.alarmVibrationEnabled ?: true
+                latitude = reqLatitude.value,
+                longitude = reqLongitude.value,
+                selectedDonorCount = donorCount,
+                status = "PENDING",
+                isUrgentAlertActive = true
             )
+
+            val reqId = repository.createBloodRequest(localRequest)
+
+            // Sync with backend PostgreSQL and dispatch targeted FCM notifications to compatible donors
+            val backendUrl = sessionManager.getBackendUrl()
+            val backendToken = sessionManager.getBackendToken()
+            if (backendUrl.isNotBlank()) {
+                try {
+                    BackendNetworkManager.createBloodRequest(
+                        rawUrl = backendUrl,
+                        authToken = backendToken,
+                        authPhone = reqPhone,
+                        requestItem = localRequest.copy(id = reqId)
+                    )
+                } catch (e: Exception) {
+                    // Non-blocking network sync
+                }
+            }
 
             _currentScreen.value = Screen.REQUEST_SENT_SUCCESS
         }
@@ -741,22 +747,40 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
     fun acceptRequest(request: BloodRequest) {
         EmergencyAlarmManager.stopAlarm()
         val user = currentUser.value
+        val donorName = user?.name?.ifBlank { null } ?: sessionManager.getName().ifBlank { "Verified Donor" }
+        val donorPhone = user?.phone?.ifBlank { null } ?: sessionManager.getPhone()
 
         viewModelScope.launch {
             val updated = request.copy(
                 status = "ACCEPTED",
-                acceptedDonorName = user?.name ?: "ashik",
-                acceptedDonorPhone = user?.phone ?: "01969114300",
+                acceptedDonorName = donorName,
+                acceptedDonorPhone = donorPhone,
                 isUrgentAlertActive = false
             )
             repository.updateBloodRequest(updated)
 
-            // Requirement 6: Requester gets a 30-second call ringtone/alert!
+            // Update status on backend PostgreSQL
+            val backendUrl = sessionManager.getBackendUrl()
+            val backendToken = sessionManager.getBackendToken()
+            if (backendUrl.isNotBlank()) {
+                try {
+                    BackendNetworkManager.updateBloodRequestStatus(
+                        rawUrl = backendUrl,
+                        authToken = backendToken,
+                        requestId = request.id,
+                        status = "ACCEPTED",
+                        acceptedDonorName = donorName,
+                        acceptedDonorPhone = donorPhone
+                    )
+                } catch (_: Exception) {}
+            }
+
+            // Requirement 6: Requester gets alert
             EmergencyAlarmManager.triggerRequesterAcceptanceAlert(
                 context = getApplication(),
                 requestId = request.id,
-                donorName = updated.acceptedDonorName ?: "ashik",
-                donorPhone = updated.acceptedDonorPhone ?: "01969114300",
+                donorName = donorName,
+                donorPhone = donorPhone,
                 bloodGroup = request.bloodGroup,
                 location = request.location,
                 soundEnabled = user?.alarmSoundEnabled ?: true,
@@ -776,6 +800,20 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                 isUrgentAlertActive = false
             )
             repository.updateBloodRequest(updated)
+
+            val backendUrl = sessionManager.getBackendUrl()
+            val backendToken = sessionManager.getBackendToken()
+            if (backendUrl.isNotBlank()) {
+                try {
+                    BackendNetworkManager.updateBloodRequestStatus(
+                        rawUrl = backendUrl,
+                        authToken = backendToken,
+                        requestId = request.id,
+                        status = "REJECTED"
+                    )
+                } catch (_: Exception) {}
+            }
+
             activeInboxTab.value = InboxTab.REJECTED
         }
     }
@@ -833,52 +871,59 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
         _currentScreen.value = Screen.ADMIN_LOGIN
     }
 
-    fun adminLogin(usernameInput: String, passwordInput: String): Boolean {
+    fun adminLogin(usernameInput: String, passwordInput: String) {
         val now = System.currentTimeMillis()
         if (adminLockedUntil.value > now) {
             val remainingSec = (adminLockedUntil.value - now) / 1000
             adminLoginError.value = "Too many failed attempts. Locked for ${remainingSec}s"
-            return false
+            return
         }
 
         val cleanUser = usernameInput.trim()
         val cleanPass = passwordInput.trim()
 
-        // Secure credential validation:
-        // Admin ID: ashikbillah4300@gmail.com
-        // Password: ashik@2008
-        val isValidUser = cleanUser.equals("ashikbillah4300@gmail.com", ignoreCase = true) || 
-                          cleanUser.equals("ashikbillah", ignoreCase = true) ||
-                          cleanUser.equals("admin", ignoreCase = true)
-        val isValidPass = cleanPass == "ashik@2008"
+        if (cleanUser.isBlank() || cleanPass.isBlank()) {
+            adminLoginError.value = "অনুগ্রহ করে অ্যাডমিন ইউজারনেম/ইমেইল এবং পাসওয়ার্ড দিন"
+            return
+        }
 
-        if (isValidUser && isValidPass) {
-            isAdminLoggedIn.value = true
-            adminLoginError.value = null
-            adminLoginAttempts.value = 0
-            adminPasswordInput.value = ""
-            // Populate form with current live database values
-            editDonationNumber.value = donationNumber.value
-            editDepositMethod.value = depositMethod.value
-            editAppName.value = appName.value
-            editContactNumber.value = contactNumber.value
-            editSupportNumber.value = supportNumber.value
-            editAppNotice.value = appNotice.value
-            editEmergencyNotice.value = emergencyNotice.value
-            editMaintenanceMode.value = maintenanceMode.value
-            editAppLogoUrl.value = appLogoUrl.value
-            _currentScreen.value = Screen.ADMIN_DASHBOARD
-            return true
-        } else {
-            val attempts = adminLoginAttempts.value + 1
-            adminLoginAttempts.value = attempts
-            if (attempts >= 5) {
-                adminLockedUntil.value = now + 60_000 // lock for 60 seconds
-                adminLoginError.value = "সুরক্ষা সতর্কতা: একাধিকবার ভুল পাসওয়ার্ড দেওয়া হয়েছে। ১ মিনিট পর চেষ্টা করুন।"
+        viewModelScope.launch {
+            val result = BackendNetworkManager.adminLogin(
+                rawUrl = sessionManager.getBackendUrl(),
+                username = cleanUser,
+                pass = cleanPass
+            )
+
+            if (result.success) {
+                if (!result.token.isNullOrBlank()) {
+                    sessionManager.setBackendToken(result.token)
+                }
+                isAdminLoggedIn.value = true
+                adminLoginError.value = null
+                adminLoginAttempts.value = 0
+                adminPasswordInput.value = ""
+
+                // Populate form with current live database values
+                editDonationNumber.value = donationNumber.value
+                editDepositMethod.value = depositMethod.value
+                editAppName.value = appName.value
+                editContactNumber.value = contactNumber.value
+                editSupportNumber.value = supportNumber.value
+                editAppNotice.value = appNotice.value
+                editEmergencyNotice.value = emergencyNotice.value
+                editMaintenanceMode.value = maintenanceMode.value
+                editAppLogoUrl.value = appLogoUrl.value
+                _currentScreen.value = Screen.ADMIN_DASHBOARD
             } else {
-                adminLoginError.value = "ভুল ইউজারনেম বা পাসওয়ার্ড! (${5 - attempts} বার চেষ্টা বাকি)"
+                val attempts = adminLoginAttempts.value + 1
+                adminLoginAttempts.value = attempts
+                if (attempts >= 5) {
+                    adminLockedUntil.value = now + 60_000 // lock for 60 seconds
+                    adminLoginError.value = "সুরক্ষা সতর্কতা: একাধিকবার ভুল পাসওয়ার্ড দেওয়া হয়েছে। ১ মিনিট পর চেষ্টা করুন।"
+                } else {
+                    adminLoginError.value = result.message ?: "ভুল ইউজারনেম বা পাসওয়ার্ড! (${5 - attempts} বার চেষ্টা বাকি)"
+                }
             }
-            return false
         }
     }
 
@@ -901,17 +946,32 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
 
     fun saveAppSettings() {
         viewModelScope.launch {
-            repository.saveSetting("donation_number", editDonationNumber.value.trim())
-            repository.saveSetting("deposit_number", editDonationNumber.value.trim())
-            repository.saveSetting("deposit_method", editDepositMethod.value.trim())
-            repository.saveSetting("app_name", editAppName.value.trim())
-            repository.saveSetting("contact_number", editContactNumber.value.trim())
-            repository.saveSetting("support_number", editSupportNumber.value.trim())
-            repository.saveSetting("app_notice", editAppNotice.value.trim())
-            repository.saveSetting("emergency_notice", editEmergencyNotice.value.trim())
-            repository.saveSetting("maintenance_mode", editMaintenanceMode.value.toString())
-            repository.saveSetting("app_sos_alarm_enabled", editAppSosAlarmEnabled.value.toString())
-            repository.saveSetting("app_logo_url", editAppLogoUrl.value.trim())
+            val settingsMap = mapOf(
+                "donation_number" to editDonationNumber.value.trim(),
+                "deposit_number" to editDonationNumber.value.trim(),
+                "deposit_method" to editDepositMethod.value.trim(),
+                "app_name" to editAppName.value.trim(),
+                "contact_number" to editContactNumber.value.trim(),
+                "support_number" to editSupportNumber.value.trim(),
+                "app_notice" to editAppNotice.value.trim(),
+                "emergency_notice" to editEmergencyNotice.value.trim(),
+                "maintenance_mode" to editMaintenanceMode.value.toString(),
+                "app_sos_alarm_enabled" to editAppSosAlarmEnabled.value.toString(),
+                "app_logo_url" to editAppLogoUrl.value.trim()
+            )
+            settingsMap.forEach { (k, v) ->
+                repository.saveSetting(k, v)
+            }
+
+            // Synchronize with online backend PostgreSQL
+            val backendUrl = sessionManager.getBackendUrl()
+            val backendToken = sessionManager.getBackendToken()
+            if (backendUrl.isNotBlank() && !backendToken.isNullOrBlank()) {
+                try {
+                    BackendNetworkManager.updateAdminSettings(backendUrl, backendToken, settingsMap)
+                } catch (_: Exception) {}
+            }
+
             adminSettingsSavedFeedback.value = "📱 Mobile App controls saved to database and synchronized live!"
             delay(3500)
             adminSettingsSavedFeedback.value = null

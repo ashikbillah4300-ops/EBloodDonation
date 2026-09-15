@@ -14,9 +14,17 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: DEFAULT_ADMIN_USERNAME
-        value: admin
+        sync: false
+      - key: DEFAULT_ADMIN_EMAIL
+        sync: false
       - key: DEFAULT_ADMIN_PASSWORD
-        value: eblood@2026
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        value: eblooddonation-6af67
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
       # Add DATABASE_URL from Neon.tech, Supabase or Render Postgres
       - key: DATABASE_URL
         sync: false

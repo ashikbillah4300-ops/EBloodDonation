@@ -119,7 +119,7 @@ fun HomeScreen(viewModel: EBloodViewModel) {
             ) {
                 Column {
                     Text(
-                        text = "Hello, ${user?.name ?: "Ashik"} 👋",
+                        text = "Hello, ${user?.name?.ifBlank { "Friend" } ?: "Friend"} 👋",
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary
@@ -674,29 +674,35 @@ fun HowItWorksStepItem(
 @Composable
 fun SupportDonationDialog(
     onDismiss: () -> Unit,
-    donationNumber: String = "01969114300",
-    depositMethod: String = "bKash",
+    donationNumber: String = "",
+    depositMethod: String = "Wallet",
     logoUrl: String? = null,
     backendBaseUrl: String? = null
 ) {
     val context = LocalContext.current
     var isBengali by remember { mutableStateOf(true) }
     val activeDepositNumber = donationNumber
-    val activeMethodName = if (depositMethod.isNotBlank()) depositMethod else "bKash"
+    val activeMethodName = if (depositMethod.isNotBlank()) depositMethod else "Wallet"
+    val isWallet = activeMethodName.equals("Wallet", ignoreCase = true)
     val isNagad = activeMethodName.equals("Nagad", ignoreCase = true)
     val isRocket = activeMethodName.equals("Rocket", ignoreCase = true)
+    val isBkash = activeMethodName.equals("bKash", ignoreCase = true)
 
     // Method theme color
     val methodColor = when {
+        isWallet -> Color(0xFF6366F1)
         isNagad -> Color(0xFFEA580C)
         isRocket -> Color(0xFF7C3AED)
-        else -> Color(0xFFE11D48)
+        isBkash -> Color(0xFFE11D48)
+        else -> Color(0xFF6366F1)
     }
 
     val methodTitle = when {
+        isWallet -> "Wallet (ওয়ালেট একাউন্ট)"
         isNagad -> "Nagad (নগদ)"
         isRocket -> "Rocket (রকেট)"
-        else -> "bKash (বিকাশ)"
+        isBkash -> "bKash (বিকাশ)"
+        else -> "$activeMethodName Wallet"
     }
 
     AlertDialog(
