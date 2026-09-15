@@ -73,10 +73,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.ui.components.AppLogo
 import com.example.ui.theme.CrimsonContainer
 import com.example.ui.theme.CrimsonPrimary
 import com.example.ui.theme.CrimsonPrimaryDark
 import com.example.ui.theme.DarkBackground
+import com.example.ui.theme.DarkSurfaceBorder
 import com.example.ui.theme.DarkSurfaceCard
 import com.example.ui.theme.DarkSurfaceElevated
 import com.example.ui.theme.SuccessGreen
@@ -89,7 +91,10 @@ import com.example.ui.viewmodel.Screen
 import kotlinx.coroutines.delay
 
 @Composable
-fun SplashScreen() {
+fun SplashScreen(viewModel: EBloodViewModel? = null) {
+    val appLogoUrl = viewModel?.appLogoUrl?.collectAsStateWithLifecycle()?.value
+    val backendUrl = viewModel?.backendServerUrl?.collectAsStateWithLifecycle()?.value
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -110,8 +115,9 @@ fun SplashScreen() {
                     .padding(16.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Image(
-                    painter = painterResource(id = com.example.R.drawable.ic_eblood_logo),
+                AppLogo(
+                    logoUrl = appLogoUrl,
+                    backendBaseUrl = backendUrl,
                     contentDescription = "EBlood Logo",
                     modifier = Modifier.size(68.dp)
                 )
@@ -157,6 +163,8 @@ fun AuthScreen(viewModel: EBloodViewModel) {
     val showOtpSent by viewModel.showOtpSentDialog.collectAsStateWithLifecycle()
     val isSendingSms by viewModel.isSendingSms.collectAsStateWithLifecycle()
     val authError by viewModel.authErrorMessage.collectAsStateWithLifecycle()
+    val appLogoUrl by viewModel.appLogoUrl.collectAsStateWithLifecycle()
+    val backendUrl by viewModel.backendServerUrl.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     Box(
@@ -183,8 +191,9 @@ fun AuthScreen(viewModel: EBloodViewModel) {
                     .padding(16.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Image(
-                    painter = painterResource(id = com.example.R.drawable.ic_eblood_logo),
+                AppLogo(
+                    logoUrl = appLogoUrl,
+                    backendBaseUrl = backendUrl,
                     contentDescription = "EBlood Logo",
                     modifier = Modifier.size(66.dp)
                 )
@@ -274,12 +283,12 @@ fun AuthScreen(viewModel: EBloodViewModel) {
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White,
-                            focusedBorderColor = Color(0xFFD32F2F),
-                            unfocusedBorderColor = Color(0xFFD32F2F),
-                            focusedTextColor = Color(0xFF111827),
-                            unfocusedTextColor = Color(0xFF111827)
+                            focusedContainerColor = DarkSurfaceCard,
+                            unfocusedContainerColor = DarkSurfaceCard,
+                            focusedBorderColor = CrimsonPrimary,
+                            unfocusedBorderColor = CrimsonPrimary,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary
                         )
                     )
 
@@ -626,6 +635,8 @@ fun OtpVerificationScreen(viewModel: EBloodViewModel) {
 fun NameInputScreen(viewModel: EBloodViewModel) {
     val name by viewModel.inputName.collectAsStateWithLifecycle()
     val authError by viewModel.authErrorMessage.collectAsStateWithLifecycle()
+    val appLogoUrl by viewModel.appLogoUrl.collectAsStateWithLifecycle()
+    val backendUrl by viewModel.backendServerUrl.collectAsStateWithLifecycle()
 
     Box(
         modifier = Modifier
@@ -670,8 +681,9 @@ fun NameInputScreen(viewModel: EBloodViewModel) {
                     .padding(12.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Image(
-                    painter = painterResource(id = com.example.R.drawable.ic_eblood_logo),
+                AppLogo(
+                    logoUrl = appLogoUrl,
+                    backendBaseUrl = backendUrl,
                     contentDescription = "EBlood Logo",
                     modifier = Modifier.size(52.dp)
                 )
@@ -788,12 +800,12 @@ fun NameInputScreen(viewModel: EBloodViewModel) {
                         shape = RoundedCornerShape(16.dp),
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White,
-                            focusedBorderColor = Color(0xFFD32F2F),
-                            unfocusedBorderColor = Color(0xFFD32F2F),
-                            focusedTextColor = Color(0xFF111827),
-                            unfocusedTextColor = Color(0xFF111827)
+                            focusedContainerColor = DarkSurfaceCard,
+                            unfocusedContainerColor = DarkSurfaceCard,
+                            focusedBorderColor = CrimsonPrimary,
+                            unfocusedBorderColor = CrimsonPrimary,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary
                         )
                     )
 
@@ -912,10 +924,10 @@ fun ProfileSetupScreen(viewModel: EBloodViewModel) {
                     .testTag("setup_name_field"),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
+                    focusedContainerColor = DarkSurfaceCard,
+                    unfocusedContainerColor = DarkSurfaceCard,
                     focusedBorderColor = CrimsonPrimary,
-                    unfocusedBorderColor = Color(0xFFE2E8F0),
+                    unfocusedBorderColor = DarkSurfaceBorder,
                     focusedTextColor = TextPrimary,
                     unfocusedTextColor = TextPrimary
                 )
@@ -945,10 +957,10 @@ fun ProfileSetupScreen(viewModel: EBloodViewModel) {
                                 .weight(1f)
                                 .height(50.dp)
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(if (isSelected) CrimsonPrimary else Color.White)
+                                .background(if (isSelected) CrimsonPrimary else DarkSurfaceCard)
                                 .border(
                                     1.dp,
-                                    if (isSelected) CrimsonPrimary else Color(0xFFE2E8F0),
+                                    if (isSelected) CrimsonPrimary else DarkSurfaceBorder,
                                     RoundedCornerShape(12.dp)
                                 )
                                 .clickable { viewModel.setupBloodGroup.value = bg }
@@ -976,10 +988,10 @@ fun ProfileSetupScreen(viewModel: EBloodViewModel) {
                                 .weight(1f)
                                 .height(50.dp)
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(if (isSelected) CrimsonPrimary else Color.White)
+                                .background(if (isSelected) CrimsonPrimary else DarkSurfaceCard)
                                 .border(
                                     1.dp,
-                                    if (isSelected) CrimsonPrimary else Color(0xFFE2E8F0),
+                                    if (isSelected) CrimsonPrimary else DarkSurfaceBorder,
                                     RoundedCornerShape(12.dp)
                                 )
                                 .clickable { viewModel.setupBloodGroup.value = bg }
@@ -1014,10 +1026,10 @@ fun ProfileSetupScreen(viewModel: EBloodViewModel) {
                 modifier = Modifier.fillMaxWidth().testTag("setup_location_field"),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
+                    focusedContainerColor = DarkSurfaceCard,
+                    unfocusedContainerColor = DarkSurfaceCard,
                     focusedBorderColor = CrimsonPrimary,
-                    unfocusedBorderColor = Color(0xFFE2E8F0),
+                    unfocusedBorderColor = DarkSurfaceBorder,
                     focusedTextColor = TextPrimary,
                     unfocusedTextColor = TextPrimary
                 )
@@ -1039,10 +1051,10 @@ fun ProfileSetupScreen(viewModel: EBloodViewModel) {
                 modifier = Modifier.fillMaxWidth().testTag("setup_address_field"),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
+                    focusedContainerColor = DarkSurfaceCard,
+                    unfocusedContainerColor = DarkSurfaceCard,
                     focusedBorderColor = CrimsonPrimary,
-                    unfocusedBorderColor = Color(0xFFE2E8F0),
+                    unfocusedBorderColor = DarkSurfaceBorder,
                     focusedTextColor = TextPrimary,
                     unfocusedTextColor = TextPrimary
                 )

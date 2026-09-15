@@ -65,6 +65,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.ui.components.AppLogo
 import com.example.ui.theme.CrimsonPrimary
 import com.example.ui.theme.CrimsonPrimaryDark
 import com.example.ui.theme.DarkBackground
@@ -90,6 +91,9 @@ fun HomeScreen(viewModel: EBloodViewModel) {
     val depositMeth by viewModel.depositMethod.collectAsStateWithLifecycle()
     val emergencyNoticeText by viewModel.emergencyNotice.collectAsStateWithLifecycle()
     val appNoticeText by viewModel.appNotice.collectAsStateWithLifecycle()
+    val appLogoUrl by viewModel.appLogoUrl.collectAsStateWithLifecycle()
+    val backendUrl by viewModel.backendServerUrl.collectAsStateWithLifecycle()
+    val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
 
     val pendingCount = requests.count { it.status == "PENDING" }
     val completedCount = requests.count { it.status == "COMPLETED" }
@@ -145,6 +149,30 @@ fun HomeScreen(viewModel: EBloodViewModel) {
                     }
 
                     Spacer(modifier = Modifier.width(8.dp))
+
+                    // Quick Light / Dark Mode Toggle Button
+                    IconButton(
+                        onClick = { viewModel.toggleDarkMode() },
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(
+                                color = if (isDarkMode) Color(0xFF1E293B) else Color(0xFFF1F5F9),
+                                shape = CircleShape
+                            )
+                            .border(
+                                1.dp,
+                                if (isDarkMode) Color(0xFF334155) else Color(0xFFE2E8F0),
+                                CircleShape
+                            )
+                            .testTag("home_theme_toggle_button")
+                    ) {
+                        Text(
+                            text = if (isDarkMode) "🌙" else "☀️",
+                            fontSize = 18.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(4.dp))
 
                     IconButton(
                         onClick = { viewModel.setBottomTab(3) }, // Go to Profile/Settings
@@ -555,7 +583,9 @@ fun HomeScreen(viewModel: EBloodViewModel) {
         SupportDonationDialog(
             onDismiss = { viewModel.showSupportDialog.value = false },
             donationNumber = depositNum,
-            depositMethod = depositMeth
+            depositMethod = depositMeth,
+            logoUrl = appLogoUrl,
+            backendBaseUrl = backendUrl
         )
     }
 }
@@ -645,7 +675,9 @@ fun HowItWorksStepItem(
 fun SupportDonationDialog(
     onDismiss: () -> Unit,
     donationNumber: String = "01969114300",
-    depositMethod: String = "bKash"
+    depositMethod: String = "bKash",
+    logoUrl: String? = null,
+    backendBaseUrl: String? = null
 ) {
     val context = LocalContext.current
     var isBengali by remember { mutableStateOf(true) }
@@ -684,8 +716,9 @@ fun SupportDonationDialog(
                             .padding(3.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Image(
-                            painter = painterResource(id = com.example.R.drawable.ic_eblood_logo),
+                        AppLogo(
+                            logoUrl = logoUrl,
+                            backendBaseUrl = backendBaseUrl,
                             contentDescription = "EBlood Logo",
                             modifier = Modifier.size(20.dp)
                         )

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { adminLogin, getAdminProfile } = require('../controllers/authController');
 const { getDashboardStats, getAllUsers, updateUserStatus, deleteUser } = require('../controllers/adminController');
-const { getAdminSettings, updateAdminSettings, updateSingleSetting } = require('../controllers/settingsController');
+const { getAdminSettings, updateAdminSettings, updateSingleSetting, uploadLogo, resetLogo } = require('../controllers/settingsController');
 const { getAllBloodRequests, updateRequestStatus } = require('../controllers/bloodRequestController');
 const { protectAdmin, adminLoginLimiter } = require('../middleware/authMiddleware');
 
@@ -31,5 +31,9 @@ router.patch('/blood-requests/:id/status', updateRequestStatus);
 router.get('/settings', getAdminSettings);
 router.put('/settings', updateAdminSettings);
 router.put('/settings/:key', updateSingleSetting);
+
+// Logo Management & Upload
+router.post('/upload-logo', uploadLogo);
+router.post('/reset-logo', resetLogo);
 
 module.exports = router;

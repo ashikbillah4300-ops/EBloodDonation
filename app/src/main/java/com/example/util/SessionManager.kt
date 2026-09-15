@@ -94,6 +94,18 @@ class SessionManager(context: Context) {
         prefs.edit().putString(KEY_BACKEND_TOKEN, token).apply()
     }
 
+    fun isDarkMode(): Boolean = prefs.getBoolean("key_is_dark_mode", false)
+
+    fun setDarkMode(enabled: Boolean) {
+        prefs.edit().putBoolean("key_is_dark_mode", enabled).apply()
+    }
+
+    fun getThemeMode(): String = prefs.getString("key_theme_mode", "LIGHT") ?: "LIGHT"
+
+    fun setThemeMode(mode: String) {
+        prefs.edit().putString("key_theme_mode", mode).apply()
+    }
+
     fun clearSession() {
         prefs.edit().clear().apply()
         try {

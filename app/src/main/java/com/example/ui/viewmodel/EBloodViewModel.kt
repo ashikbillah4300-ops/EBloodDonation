@@ -79,6 +79,30 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
             repository.initializeDefaultSettingsIfEmpty()
             repository.seedInitialDataIfNeeded()
 
+            // Pre-populate admin settings editing state from loaded settings
+            launch {
+                appSettingsList.collect { list ->
+                    list.find { it.settingKey == "app_logo_url" }?.let {
+                        if (editAppLogoUrl.value.isBlank()) editAppLogoUrl.value = it.settingValue
+                    }
+                    list.find { it.settingKey == "donation_number" }?.let {
+                        if (editDonationNumber.value == "01969114300") editDonationNumber.value = it.settingValue
+                    }
+                    list.find { it.settingKey == "contact_number" }?.let {
+                        if (editContactNumber.value == "01969114300") editContactNumber.value = it.settingValue
+                    }
+                    list.find { it.settingKey == "support_number" }?.let {
+                        if (editSupportNumber.value == "01969114300") editSupportNumber.value = it.settingValue
+                    }
+                    list.find { it.settingKey == "app_notice" }?.let {
+                        if (editAppNotice.value.isBlank()) editAppNotice.value = it.settingValue
+                    }
+                    list.find { it.settingKey == "emergency_notice" }?.let {
+                        if (editEmergencyNotice.value.isBlank()) editEmergencyNotice.value = it.settingValue
+                    }
+                }
+            }
+
             // Auto-fetch fresh settings from online backend in background
             val onlineUrl = sessionManager.getBackendUrl()
             if (onlineUrl.isNotBlank()) {
@@ -142,6 +166,10 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
         list.find { it.settingKey == "deposit_method" }?.settingValue ?: "bKash"
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "bKash")
 
+    val appName: StateFlow<String> = appSettingsList.map { list ->
+        list.find { it.settingKey == "app_name" }?.settingValue ?: "EBlood Donation"
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "EBlood Donation")
+
     val depositNumber: StateFlow<String> = appSettingsList.map { list ->
         list.find { it.settingKey == "deposit_number" }?.settingValue
             ?: list.find { it.settingKey == "donation_number" }?.settingValue
@@ -168,6 +196,10 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
         (list.find { it.settingKey == "maintenance_mode" }?.settingValue ?: "false").equals("true", ignoreCase = true)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    val appLogoUrl: StateFlow<String> = appSettingsList.map { list ->
+        list.find { it.settingKey == "app_logo_url" }?.settingValue ?: ""
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+
     // Admin Panel Security & Management State
     val allDonorsList: StateFlow<List<DonorUser>> = repository.getAllDonorsFlow().stateIn(
         scope = viewModelScope,
@@ -182,7 +214,7 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
     )
 
     var isAdminLoggedIn = MutableStateFlow(false)
-    var adminUsername = MutableStateFlow("admin")
+    var adminUsername = MutableStateFlow("ashikbillah4300@gmail.com")
     var adminPasswordInput = MutableStateFlow("")
     var adminLoginError = MutableStateFlow<String?>(null)
     var adminLoginAttempts = MutableStateFlow(0)
@@ -197,9 +229,26 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
     var editDonationNumber = MutableStateFlow("01969114300")
     var editContactNumber = MutableStateFlow("01969114300")
     var editSupportNumber = MutableStateFlow("01969114300")
+    var editAppName = MutableStateFlow("EBlood Donation")
+    var editDepositMethod = MutableStateFlow("bKash")
     var editAppNotice = MutableStateFlow("")
     var editEmergencyNotice = MutableStateFlow("")
     var editMaintenanceMode = MutableStateFlow(false)
+    var editAppSosAlarmEnabled = MutableStateFlow(true)
+    var editAppLogoUrl = MutableStateFlow("")
+
+    // Website Control Form State (2nd section)
+    var editWebsiteTitle = MutableStateFlow("EBlood Donation — রক্তদান ও সেবা প্ল্যাটফর্ম")
+    var editWebsiteAnnouncement = MutableStateFlow("জরুরি রক্তদান ও তাৎক্ষণিক ডোনার খোঁজার নির্ভরযোগ্য প্ল্যাটফর্ম")
+    var editWebsiteHeroTitle = MutableStateFlow("এক ক্লিকেই রক্তদাতা খুঁজুন, বাঁচান একটি মূল্যবান জীবন")
+    var editWebsiteHeroSubtitle = MutableStateFlow("আপনার এরিয়ার ভেরিফায়েড রক্তদাতা, রিয়েল-টাইম ব্লাড রিকোয়েস্ট, লাইভ হসপিটাল ডিরেক্টরি এবং ২৪/৭ জরুরি হটলাইন সার্ভিস — সবই এখন একটি প্ল্যাটফর্মে।")
+    var editWebsiteApkVersion = MutableStateFlow("v1.0 Live APK")
+    var editWebsiteHelpline = MutableStateFlow("+8801969114300")
+    var editWebsiteSupportEmail = MutableStateFlow("support@eblood.org")
+    var editWebsiteShowPublicDonors = MutableStateFlow(true)
+    var editWebsiteMaintenance = MutableStateFlow(false)
+    var editWebsiteFooterText = MutableStateFlow("© 2026 EBlood Donation. সকল অধিকার সংরক্ষিত। জীবন রক্ষায় একটি মানবিক প্ল্যাটফর্ম।")
+
     var adminSettingsSavedFeedback = MutableStateFlow<String?>(null)
 
     // Online Backend & Cloud Sync State
@@ -269,6 +318,31 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
     // Inbox & History tabs
     var activeInboxTab = MutableStateFlow(InboxTab.PENDING)
     var activeHistoryTab = MutableStateFlow(HistoryTab.AS_DONOR)
+
+    // Theme Settings (Light / Dark mode)
+    var isDarkMode = MutableStateFlow(sessionManager.isDarkMode())
+    var themeMode = MutableStateFlow(sessionManager.getThemeMode())
+
+    fun toggleDarkMode() {
+        val newDark = !isDarkMode.value
+        isDarkMode.value = newDark
+        val newMode = if (newDark) "DARK" else "LIGHT"
+        themeMode.value = newMode
+        sessionManager.setDarkMode(newDark)
+        sessionManager.setThemeMode(newMode)
+    }
+
+    fun setThemeMode(mode: String) {
+        themeMode.value = mode
+        val isDark = when (mode) {
+            "DARK" -> true
+            "LIGHT" -> false
+            else -> false
+        }
+        isDarkMode.value = isDark
+        sessionManager.setThemeMode(mode)
+        sessionManager.setDarkMode(isDark)
+    }
 
     // Active revealed contact
     var revealedRequest = MutableStateFlow<BloodRequest?>(null)
@@ -751,6 +825,14 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     // Admin Operations & Security
+    fun openAdminPanel() {
+        // Enforce password prompt every single time entering admin panel
+        isAdminLoggedIn.value = false
+        adminPasswordInput.value = ""
+        adminLoginError.value = null
+        _currentScreen.value = Screen.ADMIN_LOGIN
+    }
+
     fun adminLogin(usernameInput: String, passwordInput: String): Boolean {
         val now = System.currentTimeMillis()
         if (adminLockedUntil.value > now) {
@@ -763,14 +845,12 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
         val cleanPass = passwordInput.trim()
 
         // Secure credential validation:
-        // Admin credentials:
-        // Email/User: ashikbillah4300@gmail.com or ashikbillah or admin
-        // Password: ashik@2008 (or previous keys: eblood@2026 / admin123)
+        // Admin ID: ashikbillah4300@gmail.com
+        // Password: ashik@2008
         val isValidUser = cleanUser.equals("ashikbillah4300@gmail.com", ignoreCase = true) || 
                           cleanUser.equals("ashikbillah", ignoreCase = true) ||
-                          cleanUser.equals("admin", ignoreCase = true) ||
-                          cleanUser.equals("admin@eblood.org", ignoreCase = true)
-        val isValidPass = cleanPass == "ashik@2008" || cleanPass == "eblood@2026" || cleanPass == "admin123" || cleanPass == "Ashik@4300"
+                          cleanUser.equals("admin", ignoreCase = true)
+        val isValidPass = cleanPass == "ashik@2008"
 
         if (isValidUser && isValidPass) {
             isAdminLoggedIn.value = true
@@ -779,11 +859,14 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
             adminPasswordInput.value = ""
             // Populate form with current live database values
             editDonationNumber.value = donationNumber.value
+            editDepositMethod.value = depositMethod.value
+            editAppName.value = appName.value
             editContactNumber.value = contactNumber.value
             editSupportNumber.value = supportNumber.value
             editAppNotice.value = appNotice.value
             editEmergencyNotice.value = emergencyNotice.value
             editMaintenanceMode.value = maintenanceMode.value
+            editAppLogoUrl.value = appLogoUrl.value
             _currentScreen.value = Screen.ADMIN_DASHBOARD
             return true
         } else {
@@ -791,17 +874,19 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
             adminLoginAttempts.value = attempts
             if (attempts >= 5) {
                 adminLockedUntil.value = now + 60_000 // lock for 60 seconds
-                adminLoginError.value = "Brute-force protection: Too many failed attempts. Locked for 1 minute."
+                adminLoginError.value = "সুরক্ষা সতর্কতা: একাধিকবার ভুল পাসওয়ার্ড দেওয়া হয়েছে। ১ মিনিট পর চেষ্টা করুন।"
             } else {
-                adminLoginError.value = "Invalid username or password (${5 - attempts} attempts left)"
+                adminLoginError.value = "ভুল ইউজারনেম বা পাসওয়ার্ড! (${5 - attempts} বার চেষ্টা বাকি)"
             }
             return false
         }
     }
 
     fun adminLogout() {
+        // Clear auth state to force password on next entry
         isAdminLoggedIn.value = false
         adminPasswordInput.value = ""
+        adminLoginError.value = null
         _currentScreen.value = Screen.MAIN
     }
 
@@ -814,18 +899,46 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun saveAllAdminSettings() {
+    fun saveAppSettings() {
         viewModelScope.launch {
             repository.saveSetting("donation_number", editDonationNumber.value.trim())
+            repository.saveSetting("deposit_number", editDonationNumber.value.trim())
+            repository.saveSetting("deposit_method", editDepositMethod.value.trim())
+            repository.saveSetting("app_name", editAppName.value.trim())
             repository.saveSetting("contact_number", editContactNumber.value.trim())
             repository.saveSetting("support_number", editSupportNumber.value.trim())
             repository.saveSetting("app_notice", editAppNotice.value.trim())
             repository.saveSetting("emergency_notice", editEmergencyNotice.value.trim())
             repository.saveSetting("maintenance_mode", editMaintenanceMode.value.toString())
-            adminSettingsSavedFeedback.value = "All settings saved to database! The app now uses the new values live."
+            repository.saveSetting("app_sos_alarm_enabled", editAppSosAlarmEnabled.value.toString())
+            repository.saveSetting("app_logo_url", editAppLogoUrl.value.trim())
+            adminSettingsSavedFeedback.value = "📱 Mobile App controls saved to database and synchronized live!"
             delay(3500)
             adminSettingsSavedFeedback.value = null
         }
+    }
+
+    fun saveWebsiteSettings() {
+        viewModelScope.launch {
+            repository.saveSetting("website_title", editWebsiteTitle.value.trim())
+            repository.saveSetting("website_announcement", editWebsiteAnnouncement.value.trim())
+            repository.saveSetting("website_hero_title", editWebsiteHeroTitle.value.trim())
+            repository.saveSetting("website_hero_subtitle", editWebsiteHeroSubtitle.value.trim())
+            repository.saveSetting("website_apk_version", editWebsiteApkVersion.value.trim())
+            repository.saveSetting("website_helpline", editWebsiteHelpline.value.trim())
+            repository.saveSetting("website_support_email", editWebsiteSupportEmail.value.trim())
+            repository.saveSetting("website_show_public_donors", editWebsiteShowPublicDonors.value.toString())
+            repository.saveSetting("website_maintenance", editWebsiteMaintenance.value.toString())
+            repository.saveSetting("website_footer_text", editWebsiteFooterText.value.trim())
+            adminSettingsSavedFeedback.value = "🌐 Website controls saved and published live!"
+            delay(3500)
+            adminSettingsSavedFeedback.value = null
+        }
+    }
+
+    fun saveAllAdminSettings() {
+        saveAppSettings()
+        saveWebsiteSettings()
     }
 
     fun toggleDonorAccountStatus(donor: DonorUser) {

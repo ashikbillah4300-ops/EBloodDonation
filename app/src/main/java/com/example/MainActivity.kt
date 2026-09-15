@@ -11,6 +11,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -86,7 +87,17 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            MyApplicationTheme {
+            val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
+            val isDarkPref by viewModel.isDarkMode.collectAsStateWithLifecycle()
+            val systemInDark = isSystemInDarkTheme()
+            val activeDarkTheme = when (themeMode) {
+                "DARK" -> true
+                "LIGHT" -> false
+                "SYSTEM" -> systemInDark
+                else -> isDarkPref
+            }
+
+            MyApplicationTheme(darkTheme = activeDarkTheme) {
                 val context = LocalContext.current
                 val permissionLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -128,6 +139,7 @@ fun EBloodAppRoot(viewModel: EBloodViewModel) {
     val bottomTab by viewModel.activeBottomTab.collectAsStateWithLifecycle()
     val alarmState by viewModel.activeAlarmState.collectAsStateWithLifecycle()
     val allRequests by viewModel.allRequests.collectAsStateWithLifecycle()
+    val isAdminLoggedIn by viewModel.isAdminLoggedIn.collectAsStateWithLifecycle()
 
     val pendingCount = allRequests.count { it.status == "PENDING" }
 
@@ -275,7 +287,7 @@ fun EBloodAppRoot(viewModel: EBloodViewModel) {
         ) {
             // Main Screen Routing
             when (currentScreen) {
-                Screen.SPLASH -> SplashScreen()
+                Screen.SPLASH -> SplashScreen(viewModel = viewModel)
                 Screen.AUTH -> AuthScreen(viewModel = viewModel)
                 Screen.OTP_VERIFY -> OtpVerificationScreen(viewModel = viewModel)
                 Screen.NAME_INPUT -> NameInputScreen(viewModel = viewModel)
@@ -294,7 +306,13 @@ fun EBloodAppRoot(viewModel: EBloodViewModel) {
                 Screen.REQUEST_SENT_SUCCESS -> RequestSentSuccessScreen(viewModel = viewModel)
                 Screen.CONTACT_REVEALED -> ContactRevealedScreen(viewModel = viewModel)
                 Screen.ADMIN_LOGIN -> AdminLoginScreen(viewModel = viewModel)
-                Screen.ADMIN_DASHBOARD -> AdminDashboardScreen(viewModel = viewModel)
+                Screen.ADMIN_DASHBOARD -> {
+                    if (isAdminLoggedIn) {
+                        AdminDashboardScreen(viewModel = viewModel)
+                    } else {
+                        AdminLoginScreen(viewModel = viewModel)
+                    }
+                }
             }
 
             // Urgent Alarm & Ringtone Notification Overlay (Requirement 4 & 6)

@@ -247,8 +247,8 @@ fun RequestStep1Screen(viewModel: EBloodViewModel) {
                     .testTag("request_location_field"),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
+                    focusedContainerColor = DarkSurfaceCard,
+                    unfocusedContainerColor = DarkSurfaceCard,
                     focusedBorderColor = CrimsonPrimary,
                     unfocusedBorderColor = DarkSurfaceBorder,
                     focusedTextColor = TextPrimary,
@@ -426,7 +426,7 @@ fun BloodGroupItemCard(
         modifier = modifier
             .height(54.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(if (isSelected) SuccessGreen else Color.White)
+            .background(if (isSelected) SuccessGreen else DarkSurfaceCard)
             .border(
                 1.dp,
                 if (isSelected) SuccessGreen else DarkSurfaceBorder,
@@ -540,8 +540,8 @@ fun RequestStep3Screen(viewModel: EBloodViewModel) {
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
+                    focusedContainerColor = DarkSurfaceCard,
+                    unfocusedContainerColor = DarkSurfaceCard,
                     focusedBorderColor = CrimsonPrimary,
                     unfocusedBorderColor = DarkSurfaceBorder,
                     focusedTextColor = TextPrimary,

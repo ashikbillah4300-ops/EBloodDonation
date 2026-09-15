@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EBlood Donation — রক্তদান ও সেবা অ্যাপ ডাউনলোড</title>
+  <title id="web-page-title">EBlood Donation — রক্তদান ও সেবা প্ল্যাটফর্ম</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <style>
@@ -24,21 +24,41 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen hero-glow selection:bg-rose-500 selection:text-white">
 
+  <!-- Maintenance Mode Overlay (Controlled via Website Control) -->
+  <div id="web-maintenance-overlay" class="hidden fixed inset-0 z-50 bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
+    <div class="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-4">
+      <div class="w-16 h-16 mx-auto bg-amber-500/20 text-amber-400 rounded-2xl flex items-center justify-center text-3xl">
+        🚧
+      </div>
+      <h2 class="text-2xl font-black text-white">ওয়েবসাইট মেইন্টেন্যান্স চলছে</h2>
+      <p class="text-slate-400 text-sm leading-relaxed" id="web-maintenance-msg">
+        আমাদের প্ল্যাটফর্মে সাময়িক আপগ্রেড ও নিরাপত্তা রক্ষণাবেক্ষণের কাজ চলছে। খুব শীঘ্রই আমরা অনলাইনে ফিরে আসছি।
+      </p>
+      <div class="pt-2 text-xs text-rose-400 font-semibold" id="web-maintenance-hotline">
+        জরুরি প্রয়োজনে হটলাইন: +8801969114300
+      </div>
+    </div>
+  </div>
+
   <!-- Navbar -->
-  <nav class="border-b border-slate-800/80 backdrop-blur-md sticky top-0 z-50 bg-slate-950/80">
+  <nav class="border-b border-slate-800/80 backdrop-blur-md sticky top-0 z-40 bg-slate-950/80">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
       <div class="flex items-center space-x-3">
         <div class="w-10 h-10 rounded-xl bg-white p-1.5 flex items-center justify-center shadow-lg shadow-rose-900/40">
-          <img src="/logo.svg" alt="EBlood Donation Logo" class="w-full h-full object-contain">
+          <img src="/logo.svg" alt="EBlood Donation Logo" class="app-brand-logo w-full h-full object-contain">
         </div>
         <div>
-          <span class="font-bold text-lg text-white tracking-wide">EBlood Donation</span>
-          <span class="hidden sm:inline-block ml-2 px-2 py-0.5 text-[10px] font-semibold bg-rose-900/40 border border-rose-700/50 text-rose-300 rounded-full">v1.0 Live</span>
+          <span id="web-brand-name" class="font-bold text-lg text-white tracking-wide">EBlood Donation</span>
+          <span id="web-version-badge" class="hidden sm:inline-block ml-2 px-2 py-0.5 text-[10px] font-semibold bg-rose-900/40 border border-rose-700/50 text-rose-300 rounded-full">v1.0 Live</span>
         </div>
       </div>
       <div class="flex items-center space-x-3">
+        <a id="web-helpline-link" href="tel:+8801969114300" class="hidden md:flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 transition">
+          <span>📞</span>
+          <span id="web-helpline-text">হটলাইন: +8801969114300</span>
+        </a>
         <a href="#download" class="text-xs sm:text-sm font-bold bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-xl shadow-md shadow-rose-900/30 transition">
-          ডাউনলোড
+          ডাউনলোড APK
         </a>
       </div>
     </div>
@@ -52,18 +72,18 @@
       <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
         <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-rose-950/70 border border-rose-800/60 text-rose-300 text-xs font-semibold">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-          <span>জরুরি রক্তদান ও তাৎক্ষণিক ডোনার খোঁজার নির্ভরযোগ্য অ্যাপ</span>
+          <span id="web-announcement-text">জরুরি রক্তদান ও তাৎক্ষণিক ডোনার খোঁজার নির্ভরযোগ্য প্ল্যাটফর্ম</span>
         </div>
 
-        <h1 class="text-3xl sm:text-5xl lg:text-6xl font-black text-white leading-tight tracking-tight">
+        <h1 id="web-hero-title" class="text-3xl sm:text-5xl lg:text-6xl font-black text-white leading-tight tracking-tight">
           এক ক্লিকেই রক্তদাতা খুঁজুন, <br class="hidden sm:inline">
           <span class="text-transparent bg-clip-text bg-gradient-to-r from-rose-500 via-red-400 to-amber-400">
             বাঁচান একটি মূল্যবান জীবন
           </span>
         </h1>
 
-        <p class="text-slate-300 text-base sm:text-lg max-w-xl mx-auto lg:mx-0 leading-relaxed font-normal">
-          আপনার এরিয়ার ভেরিফায়েড রক্তদাতা, রিয়েল-টাইম ব্লাড রিকোয়েস্ট, লাইভ হসপিটাল ডিরেক্টরি এবং ২৪/৭ জরুরি হটলাইন সার্ভিস — সবই এখন একটি অ্যান্ড্রয়েড অ্যাপে।
+        <p id="web-hero-subtitle" class="text-slate-300 text-base sm:text-lg max-w-xl mx-auto lg:mx-0 leading-relaxed font-normal">
+          আপনার এরিয়ার ভেরিফায়েড রক্তদাতা, রিয়েল-টাইম ব্লাড রিকোয়েস্ট, লাইভ হসপিটাল ডিরেক্টরি এবং ২৪/৭ জরুরি হটলাইন সার্ভিস — সবই এখন একটি প্ল্যাটফর্মে।
         </p>
 
         <!-- CTA Buttons -->
@@ -72,7 +92,7 @@
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
             </svg>
-            <span>Download EBlood APK (Free)</span>
+            <span id="web-download-btn-text">Download EBlood APK (Free)</span>
           </button>
         </div>
 
@@ -210,25 +230,190 @@
     </div>
   </section>
 
+  <!-- Public Blood Donors Directory (Controlled via Website Control) -->
+  <section id="web-public-donors-section" class="py-16 bg-slate-900/50 border-t border-slate-800/80">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 space-y-6">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <span class="text-xs font-bold text-rose-400 uppercase tracking-wider">রিয়েল-টাইম ডিরেক্টরি</span>
+          <h2 class="text-2xl sm:text-3xl font-black text-white mt-1">জরুরি রক্তদাতাদের তালিকা</h2>
+          <p class="text-xs text-slate-400">আপনার এলাকার উপলব্ধ রক্তদাতাদের সরাসরি খুঁজে পেতে ফিল্টার করুন</p>
+        </div>
+        <!-- Group Filter -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-2" id="web-bg-filters">
+          <button onclick="filterWebDonors('ALL')" class="bg-rose-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">সকল</button>
+          <button onclick="filterWebDonors('A+')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold transition">A+</button>
+          <button onclick="filterWebDonors('A-')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold transition">A-</button>
+          <button onclick="filterWebDonors('B+')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold transition">B+</button>
+          <button onclick="filterWebDonors('B-')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold transition">B-</button>
+          <button onclick="filterWebDonors('O+')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold transition">O+</button>
+          <button onclick="filterWebDonors('O-')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold transition">O-</button>
+          <button onclick="filterWebDonors('AB+')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold transition">AB+</button>
+          <button onclick="filterWebDonors('AB-')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold transition">AB-</button>
+        </div>
+      </div>
+
+      <!-- Donors Cards Grid -->
+      <div id="webDonorsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+        <p class="text-xs text-slate-400">রক্তদাতাদের তথ্য লোড হচ্ছে...</p>
+      </div>
+    </div>
+  </section>
+
   <!-- Footer -->
   <footer class="border-t border-slate-800 py-10 bg-slate-950 text-center text-xs text-slate-500">
     <div class="max-w-6xl mx-auto px-4 space-y-3">
       <div class="flex items-center justify-center space-x-2.5 text-rose-500 font-semibold text-sm">
         <div class="w-6 h-6 rounded-md bg-white p-0.5 flex items-center justify-center shadow-sm">
-          <img src="/logo.svg" alt="EBlood Logo" class="w-full h-full object-contain">
+          <img src="/logo.svg" alt="EBlood Logo" class="app-brand-logo w-full h-full object-contain">
         </div>
-        <span>EBlood Donation Platform</span>
+        <span id="web-footer-brand">EBlood Donation Platform</span>
       </div>
-      <p>© 2026 EBlood Donation. সকল অধিকার সংরক্ষিত। জীবন রক্ষায় একটি মানবিক প্ল্যাটফর্ম।</p>
+      <p id="web-footer-text">© 2026 EBlood Donation. সকল অধিকার সংরক্ষিত। জীবন রক্ষায় একটি মানবিক প্ল্যাটফর্ম।</p>
     </div>
   </footer>
 
-  <!-- Download Action Script -->
+  <!-- Download & Dynamic Settings Script -->
   <script>
     function triggerDownload() {
-      // Direct APK download link or notice
       window.location.href = '/download/eblood.apk';
     }
+
+    let allWebDonors = [];
+    let currentWebFilter = 'ALL';
+
+    function filterWebDonors(bg) {
+      currentWebFilter = bg;
+      document.querySelectorAll('#web-bg-filters button').forEach(btn => {
+        if (btn.innerText === (bg === 'ALL' ? 'সকল' : bg)) {
+          btn.className = 'bg-rose-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition';
+        } else {
+          btn.className = 'bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold transition';
+        }
+      });
+      renderWebDonors();
+    }
+
+    function renderWebDonors() {
+      const container = document.getElementById('webDonorsGrid');
+      if (!container) return;
+
+      const filtered = currentWebFilter === 'ALL'
+        ? allWebDonors
+        : allWebDonors.filter(d => d.bloodGroup === currentWebFilter);
+
+      if (!filtered.length) {
+        container.innerHTML = `<p class="col-span-full text-center text-xs text-slate-500 py-6">এই গ্রুপের কোনো রক্তদাতা এখনো পাওয়া যায়নি।</p>`;
+        return;
+      }
+
+      container.innerHTML = filtered.slice(0, 8).map(d => `
+        <div class="bg-slate-900/90 border border-slate-800 hover:border-rose-900/50 rounded-2xl p-4 transition shadow-lg">
+          <div class="flex items-center justify-between mb-2">
+            <span class="w-9 h-9 rounded-xl bg-rose-600/20 text-rose-400 border border-rose-600/40 flex items-center justify-center font-black text-sm">${d.bloodGroup || 'O+'}</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${d.isAvailable ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-slate-800 text-slate-400'}">
+              ${d.isAvailable ? '● প্রস্তুত' : '○ ব্যস্ত'}
+            </span>
+          </div>
+          <h4 class="font-bold text-sm text-white truncate">${d.name || 'রক্তদাতা'}</h4>
+          <p class="text-[11px] text-slate-400 truncate mt-0.5">📍 ${d.location || 'ঢাকা'}</p>
+          <a href="tel:${d.phone || '+8801969114300'}" class="mt-3 w-full py-1.5 bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition">
+            <span>📞 কল করুন</span>
+          </a>
+        </div>
+      `).join('');
+    }
+
+    // Dynamic website settings synchronization
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.data) {
+          const s = data.data;
+
+          // Logo
+          if (s.app_logo_url) {
+            document.querySelectorAll('.app-brand-logo').forEach(img => img.src = s.app_logo_url);
+          }
+
+          // Maintenance Mode
+          if (s.website_maintenance === 'true') {
+            const overlay = document.getElementById('web-maintenance-overlay');
+            if (overlay) overlay.classList.remove('hidden');
+          }
+
+          // Website Title & Branding
+          if (s.website_title) {
+            document.title = s.website_title;
+            const brandEl = document.getElementById('web-brand-name');
+            if (brandEl) brandEl.innerText = s.website_title.split('—')[0].trim();
+          }
+
+          // Version badge
+          if (s.website_apk_version) {
+            const v = document.getElementById('web-version-badge');
+            if (v) v.innerText = s.website_apk_version;
+          }
+
+          // Top Announcement
+          if (s.website_announcement) {
+            const a = document.getElementById('web-announcement-text');
+            if (a) a.innerText = s.website_announcement;
+          }
+
+          // Hero Title & Subtitle
+          if (s.website_hero_title) {
+            const ht = document.getElementById('web-hero-title');
+            if (ht) ht.innerHTML = s.website_hero_title;
+          }
+          if (s.website_hero_subtitle) {
+            const hs = document.getElementById('web-hero-subtitle');
+            if (hs) hs.innerText = s.website_hero_subtitle;
+          }
+
+          // Helpline
+          if (s.website_helpline) {
+            const hl = document.getElementById('web-helpline-text');
+            if (hl) hl.innerText = 'হটলাইন: ' + s.website_helpline;
+            const hlink = document.getElementById('web-helpline-link');
+            if (hlink) hlink.href = 'tel:' + s.website_helpline;
+            const mhl = document.getElementById('web-maintenance-hotline');
+            if (mhl) mhl.innerText = 'জরুরি প্রয়োজনে হটলাইন: ' + s.website_helpline;
+          }
+
+          // Public Donors visibility
+          if (s.website_show_public_donors === 'false') {
+            const donorSec = document.getElementById('web-public-donors-section');
+            if (donorSec) donorSec.classList.add('hidden');
+          }
+
+          // Footer Text
+          if (s.website_footer_text) {
+            const ft = document.getElementById('web-footer-text');
+            if (ft) ft.innerText = s.website_footer_text;
+          }
+        }
+      })
+      .catch(() => {});
+
+    // Fetch Public Donors for directory
+    fetch('/api/donors')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.success && data.data && data.data.donors) {
+          allWebDonors = data.data.donors;
+          renderWebDonors();
+        }
+      })
+      .catch(() => {
+        allWebDonors = [
+          { name: 'আশিক বিল্লাহ', bloodGroup: 'O+', location: 'উত্তরা, ঢাকা', phone: '01969114300', isAvailable: true },
+          { name: 'ডাঃ তানভীর আহমেদ', bloodGroup: 'A+', location: 'ধানমন্ডি, ঢাকা', phone: '01711223344', isAvailable: true },
+          { name: 'ফারহান সাদিক', bloodGroup: 'B+', location: 'মিরপুর, ঢাকা', phone: '01812345678', isAvailable: true },
+          { name: 'মাহমুদুল হাসান', bloodGroup: 'AB+', location: 'গুলশান, ঢাকা', phone: '01512345678', isAvailable: true }
+        ];
+        renderWebDonors();
+      });
   </script>
 
 </body>

@@ -51,6 +51,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -74,6 +75,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.ui.components.AppLogo
 import com.example.data.model.BloodRequest
 import com.example.data.model.DonorUser
 import com.example.ui.theme.CrimsonPrimary
@@ -91,11 +93,13 @@ import java.util.Locale
 
 @Composable
 fun AdminLoginScreen(viewModel: EBloodViewModel) {
-    var username by remember { mutableStateOf("admin") }
+    var username by remember { mutableStateOf("ashikbillah4300@gmail.com") }
     var password by remember { mutableStateOf("") }
     var isPasswordVisible by remember { mutableStateOf(false) }
     val loginError by viewModel.adminLoginError.collectAsStateWithLifecycle()
     val attempts by viewModel.adminLoginAttempts.collectAsStateWithLifecycle()
+    val appLogoUrl by viewModel.appLogoUrl.collectAsStateWithLifecycle()
+    val backendUrl by viewModel.backendServerUrl.collectAsStateWithLifecycle()
 
     Box(
         modifier = Modifier
@@ -116,7 +120,7 @@ fun AdminLoginScreen(viewModel: EBloodViewModel) {
                 horizontalArrangement = Arrangement.Start
             ) {
                 IconButton(
-                    onClick = { viewModel.navigateTo(Screen.MAIN) },
+                    onClick = { viewModel.adminLogout() },
                     modifier = Modifier.testTag("admin_back_to_app_button")
                 ) {
                     Icon(
@@ -138,8 +142,9 @@ fun AdminLoginScreen(viewModel: EBloodViewModel) {
                     .padding(12.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Image(
-                    painter = painterResource(id = com.example.R.drawable.ic_eblood_logo),
+                AppLogo(
+                    logoUrl = appLogoUrl,
+                    backendBaseUrl = backendUrl,
                     contentDescription = "EBlood Logo",
                     modifier = Modifier.size(54.dp)
                 )
@@ -323,6 +328,9 @@ fun AdminDashboardScreen(viewModel: EBloodViewModel) {
     val allRequests by viewModel.allRequests.collectAsStateWithLifecycle()
     val allDonations by viewModel.allDonationRecords.collectAsStateWithLifecycle()
     val feedbackMsg by viewModel.adminSettingsSavedFeedback.collectAsStateWithLifecycle()
+    val appLogoUrl by viewModel.appLogoUrl.collectAsStateWithLifecycle()
+    val backendUrl by viewModel.backendServerUrl.collectAsStateWithLifecycle()
+    val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
 
     val totalUsers = allDonors.size
     val totalDonors = allDonors.count { it.isAvailable }
@@ -360,8 +368,9 @@ fun AdminDashboardScreen(viewModel: EBloodViewModel) {
                                 .padding(5.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Image(
-                                painter = painterResource(id = com.example.R.drawable.ic_eblood_logo),
+                            AppLogo(
+                                logoUrl = appLogoUrl,
+                                backendBaseUrl = backendUrl,
                                 contentDescription = "EBlood Logo",
                                 modifier = Modifier.size(24.dp)
                             )
@@ -383,9 +392,20 @@ fun AdminDashboardScreen(viewModel: EBloodViewModel) {
                     }
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Return to App
+                        // Quick Theme Toggle
                         IconButton(
-                            onClick = { viewModel.navigateTo(Screen.MAIN) },
+                            onClick = { viewModel.toggleDarkMode() },
+                            modifier = Modifier.testTag("admin_theme_toggle_button")
+                        ) {
+                            Text(
+                                text = if (isDarkMode) "🌙" else "☀️",
+                                fontSize = 16.sp
+                            )
+                        }
+
+                        // Return to App (Logs out so next entry demands password)
+                        IconButton(
+                            onClick = { viewModel.adminLogout() },
                             modifier = Modifier.testTag("admin_exit_to_app_button")
                         ) {
                             Icon(
@@ -419,19 +439,25 @@ fun AdminDashboardScreen(viewModel: EBloodViewModel) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 val tabs = listOf(
-                    0 to "📊 Dashboard",
-                    1 to "👥 Users (${totalUsers})",
-                    2 to "🩸 Requests (${totalRequests})",
-                    3 to "⚙️ App Settings",
-                    4 to "🌐 Online Server"
+                    0 to "📱 App Control",
+                    1 to "🌐 Website Control",
+                    2 to "📊 Overview",
+                    3 to "👥 Users (${totalUsers})",
+                    4 to "🩸 Requests (${totalRequests})",
+                    5 to "🔄 Server & API"
                 )
 
                 tabs.forEach { (index, title) ->
                     val isSelected = activeTab == index
+                    val tabColor = when (index) {
+                        0 -> if (isSelected) CrimsonPrimary else Color(0xFF334155)
+                        1 -> if (isSelected) Color(0xFF0284C7) else Color(0xFF334155)
+                        else -> if (isSelected) Color(0xFF4F46E5) else Color(0xFF334155)
+                    }
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
-                            .background(if (isSelected) Color(0xFF4F46E5) else Color(0xFF334155))
+                            .background(tabColor)
                             .clickable { viewModel.adminActiveTab.value = index }
                             .padding(horizontal = 14.dp, vertical = 8.dp)
                             .testTag("admin_tab_$index")
@@ -477,7 +503,9 @@ fun AdminDashboardScreen(viewModel: EBloodViewModel) {
                     .padding(16.dp)
             ) {
                 when (activeTab) {
-                    0 -> AdminOverviewTab(
+                    0 -> AdminAppControlTab(viewModel = viewModel)
+                    1 -> AdminWebsiteControlTab(viewModel = viewModel)
+                    2 -> AdminOverviewTab(
                         totalUsers = totalUsers,
                         totalDonors = totalDonors,
                         totalRequests = totalRequests,
@@ -488,10 +516,10 @@ fun AdminDashboardScreen(viewModel: EBloodViewModel) {
                         recentRequests = allRequests.take(4),
                         onTabSelect = { viewModel.adminActiveTab.value = it }
                     )
-                    1 -> AdminUsersTab(viewModel = viewModel, allDonors = allDonors)
-                    2 -> AdminRequestsTab(viewModel = viewModel, allRequests = allRequests)
-                    3 -> AdminSettingsTab(viewModel = viewModel)
-                    4 -> AdminOnlineBackendSyncTab(viewModel = viewModel)
+                    3 -> AdminUsersTab(viewModel = viewModel, allDonors = allDonors)
+                    4 -> AdminRequestsTab(viewModel = viewModel, allRequests = allRequests)
+                    5 -> AdminOnlineBackendSyncTab(viewModel = viewModel)
+                    else -> AdminAppControlTab(viewModel = viewModel)
                 }
             }
         }
@@ -617,7 +645,7 @@ fun AdminOverviewTab(
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF818CF8),
-                modifier = Modifier.clickable { onTabSelect(1) }
+                modifier = Modifier.clickable { onTabSelect(3) }
             )
         }
 
@@ -672,7 +700,7 @@ fun AdminOverviewTab(
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF818CF8),
-                modifier = Modifier.clickable { onTabSelect(2) }
+                modifier = Modifier.clickable { onTabSelect(4) }
             )
         }
 
@@ -1136,38 +1164,181 @@ fun AdminRequestsTab(viewModel: EBloodViewModel, allRequests: List<BloodRequest>
 }
 
 @Composable
-fun AdminSettingsTab(viewModel: EBloodViewModel) {
+fun AdminAppControlTab(viewModel: EBloodViewModel) {
     val editDonationNum by viewModel.editDonationNumber.collectAsStateWithLifecycle()
+    val editDepositMethod by viewModel.editDepositMethod.collectAsStateWithLifecycle()
+    val editAppName by viewModel.editAppName.collectAsStateWithLifecycle()
     val editContactNum by viewModel.editContactNumber.collectAsStateWithLifecycle()
     val editSupportNum by viewModel.editSupportNumber.collectAsStateWithLifecycle()
     val editNotice by viewModel.editAppNotice.collectAsStateWithLifecycle()
     val editEmergency by viewModel.editEmergencyNotice.collectAsStateWithLifecycle()
     val editMaintenance by viewModel.editMaintenanceMode.collectAsStateWithLifecycle()
-    val feedbackMsg by viewModel.adminSettingsSavedFeedback.collectAsStateWithLifecycle()
+    val editSosAlarm by viewModel.editAppSosAlarmEnabled.collectAsStateWithLifecycle()
+    val editLogoUrl by viewModel.editAppLogoUrl.collectAsStateWithLifecycle()
+    val backendUrl by viewModel.backendServerUrl.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text(text = "Dynamic App Settings", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+        Surface(
+            color = CrimsonPrimary.copy(alpha = 0.15f),
+            shape = RoundedCornerShape(20.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, CrimsonPrimary.copy(alpha = 0.4f))
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = "📱", fontSize = 12.sp)
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "১ম সেকশন: অ্যাপ কন্ট্রোল (Mobile App Control)",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = CrimsonPrimary
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(text = "Mobile App Control Center", fontSize = 20.sp, fontWeight = FontWeight.Black, color = TextPrimary)
         Text(
-            text = "Change donation number, support numbers, notices & maintenance mode in real time without recompiling APK!",
+            text = "মোবাইল অ্যাপের লোগো, ডিপোজিট গেটওয়ে ও নম্বর, জরুরি রেড এলার্ট, নোটিশ ও মেইন্টেন্যান্স কন্ট্রোল",
             fontSize = 12.sp,
             color = Color(0xFFA5B4FC)
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Donation Number Card
+        // App & Website Brand Logo Card
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = DarkSurfaceCard),
             shape = RoundedCornerShape(14.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE11D48).copy(alpha = 0.5f))
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF6366F1).copy(alpha = 0.5f))
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = "🎨", fontSize = 18.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "App & Website Logo / ব্র্যান্ড লোগো",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .background(Color(0xFF312E81), RoundedCornerShape(6.dp))
+                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                    ) {
+                        Text(text = "Live Sync", fontSize = 10.sp, color = Color(0xFFA5B4FC), fontWeight = FontWeight.Bold)
+                    }
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "Web Admin Panel থেকে ফাইল আপলোড করলে অথবা নিচে ছবির লিঙ্ক দিলে অ্যাপের সকল জায়গায় স্বয়ংক্রিয়ভাবে নতুন লোগো কার্যকর হবে।",
+                    fontSize = 11.sp,
+                    color = TextSecondary
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(54.dp)
+                            .background(Color.White, RoundedCornerShape(12.dp))
+                            .border(1.dp, Color(0xFF6366F1), RoundedCornerShape(12.dp))
+                            .padding(6.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AppLogo(
+                            logoUrl = editLogoUrl,
+                            backendBaseUrl = backendUrl,
+                            contentDescription = "Active Logo Preview",
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = "Logo URL / পাথ:", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.SemiBold)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        OutlinedTextField(
+                            value = editLogoUrl,
+                            onValueChange = { viewModel.editAppLogoUrl.value = it },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("admin_edit_logo_url_input"),
+                            placeholder = { Text("/logo.svg or https://...", color = TextMuted, fontSize = 12.sp) },
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color(0xFF6366F1),
+                                unfocusedBorderColor = Color(0xFF475569),
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(text = "App Display Name / অ্যাপের নাম:", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.SemiBold)
+                Spacer(modifier = Modifier.height(4.dp))
+                OutlinedTextField(
+                    value = editAppName,
+                    onValueChange = { viewModel.editAppName.value = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF6366F1),
+                        unfocusedBorderColor = Color(0xFF475569),
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(
+                        onClick = { viewModel.editAppLogoUrl.value = "/logo.svg" }
+                    ) {
+                        Text("Reset Default Logo", fontSize = 11.sp, color = Color(0xFFA5B4FC))
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // Deposit Gateway & Number Management Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = DarkSurfaceCard),
+            shape = RoundedCornerShape(14.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, CrimsonPrimary.copy(alpha = 0.5f))
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = "💖", fontSize = 18.sp)
+                    Text(text = "💳", fontSize = 18.sp)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Donation / bKash Send Money Number",
+                        text = "Deposit Gateway & Number (বিকাশ / নগদ / রকেট)",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -1175,20 +1346,50 @@ fun AdminSettingsTab(viewModel: EBloodViewModel) {
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "This number is displayed across the mobile app in the Donation & Support dialog.",
+                    text = "অ্যাপে ইউজার ডিপোজিট বা ডোনেশনে ক্লিক করলে এখানে সেট করা গেটওয়ে ও নম্বরটি সাথে সাথে প্রদর্শিত হবে।",
                     fontSize = 11.sp,
                     color = TextSecondary
                 )
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
+                Text(text = "ডিপোজিট মেথড (Payment Gateway):", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.SemiBold)
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf("bKash", "Nagad", "Rocket").forEach { method ->
+                        val isSelected = editDepositMethod.equals(method, ignoreCase = true)
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isSelected) CrimsonPrimary else Color(0xFF1E293B))
+                                .clickable { viewModel.editDepositMethod.value = method }
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = method,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isSelected) Color.White else TextSecondary
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(text = "ডিপোজিট পার্সোনাল নম্বর (Account Number):", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.SemiBold)
+                Spacer(modifier = Modifier.height(4.dp))
                 OutlinedTextField(
                     value = editDonationNum,
                     onValueChange = { viewModel.editDonationNumber.value = it },
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("admin_edit_donation_number_input"),
-                    placeholder = { Text("019XXXXXXXX", color = TextMuted) },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = CrimsonPrimary,
@@ -1203,7 +1404,7 @@ fun AdminSettingsTab(viewModel: EBloodViewModel) {
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // Emergency Notice
+        // Emergency Crisis Notice Card
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = DarkSurfaceCard),
@@ -1211,15 +1412,28 @@ fun AdminSettingsTab(viewModel: EBloodViewModel) {
             border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFDC2626).copy(alpha = 0.4f))
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = "🚨", fontSize = 18.sp)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Emergency Urgent Announcement Banner",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = "🚨", fontSize = 18.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Emergency Crisis Banner (Red Alert)",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFFCA5A5)
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .background(Color(0xFF7F1D1D), RoundedCornerShape(6.dp))
+                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                    ) {
+                        Text(text = "Critical Notice", fontSize = 10.sp, color = Color(0xFFFECACA), fontWeight = FontWeight.Bold)
+                    }
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -1250,7 +1464,7 @@ fun AdminSettingsTab(viewModel: EBloodViewModel) {
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // General Notice & Contacts
+        // General Notice & Contacts Card
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = DarkSurfaceCard),
@@ -1258,7 +1472,7 @@ fun AdminSettingsTab(viewModel: EBloodViewModel) {
             border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF334155))
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text(text = "General App Notice", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                Text(text = "📢 General App Notice", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
                 Spacer(modifier = Modifier.height(6.dp))
                 OutlinedTextField(
                     value = editNotice,
@@ -1278,32 +1492,57 @@ fun AdminSettingsTab(viewModel: EBloodViewModel) {
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Text(text = "Support / Contact Phone Number", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
-                Spacer(modifier = Modifier.height(6.dp))
-                OutlinedTextField(
-                    value = editContactNum,
-                    onValueChange = { viewModel.editContactNumber.value = it },
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFF6366F1),
-                        unfocusedBorderColor = Color(0xFF475569),
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(10.dp)
-                )
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = "📞 App Support Helpline", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        OutlinedTextField(
+                            value = editSupportNum,
+                            onValueChange = { viewModel.editSupportNumber.value = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color(0xFF6366F1),
+                                unfocusedBorderColor = Color(0xFF475569),
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                    }
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = "📱 Contact Phone Number", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        OutlinedTextField(
+                            value = editContactNum,
+                            onValueChange = { viewModel.editContactNumber.value = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color(0xFF6366F1),
+                                unfocusedBorderColor = Color(0xFF475569),
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Maintenance Mode Toggle
+                // App Switches (Maintenance Mode & SOS Siren Alarm)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text(text = "Maintenance Mode", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                        Text(text = "App Maintenance Mode", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
                         Text(text = "Temporarily notify users of server maintenance", fontSize = 11.sp, color = TextSecondary)
                     }
                     Switch(
@@ -1315,25 +1554,46 @@ fun AdminSettingsTab(viewModel: EBloodViewModel) {
                         )
                     )
                 }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(text = "Emergency SOS Siren Alarm", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                        Text(text = "ক্রিটিক্যাল রিকোয়েস্টে অডিও সাইরেন সক্রিয় রাখা", fontSize = 11.sp, color = TextSecondary)
+                    }
+                    Switch(
+                        checked = editSosAlarm,
+                        onCheckedChange = { viewModel.editAppSosAlarmEnabled.value = it },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = Color(0xFFEF4444)
+                        )
+                    )
+                }
             }
         }
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Save All Changes Button
+        // Save Button for App Controls
         Button(
-            onClick = { viewModel.saveAllAdminSettings() },
+            onClick = { viewModel.saveAppSettings() },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp)
-                .testTag("admin_save_settings_button"),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4F46E5)),
+                .testTag("admin_save_app_settings_button"),
+            colors = ButtonDefaults.buttonColors(containerColor = CrimsonPrimary),
             shape = RoundedCornerShape(12.dp)
         ) {
             Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color.White)
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Save Settings & Sync Live with App",
+                text = "Save Mobile App Controls & Sync Live",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
@@ -1342,6 +1602,342 @@ fun AdminSettingsTab(viewModel: EBloodViewModel) {
 
         Spacer(modifier = Modifier.height(30.dp))
     }
+}
+
+@Composable
+fun AdminWebsiteControlTab(viewModel: EBloodViewModel) {
+    val editWebTitle by viewModel.editWebsiteTitle.collectAsStateWithLifecycle()
+    val editWebAnnouncement by viewModel.editWebsiteAnnouncement.collectAsStateWithLifecycle()
+    val editWebHeroTitle by viewModel.editWebsiteHeroTitle.collectAsStateWithLifecycle()
+    val editWebHeroSubtitle by viewModel.editWebsiteHeroSubtitle.collectAsStateWithLifecycle()
+    val editWebApkVersion by viewModel.editWebsiteApkVersion.collectAsStateWithLifecycle()
+    val editWebHelpline by viewModel.editWebsiteHelpline.collectAsStateWithLifecycle()
+    val editWebEmail by viewModel.editWebsiteSupportEmail.collectAsStateWithLifecycle()
+    val editWebShowDonors by viewModel.editWebsiteShowPublicDonors.collectAsStateWithLifecycle()
+    val editWebMaintenance by viewModel.editWebsiteMaintenance.collectAsStateWithLifecycle()
+    val editWebFooterText by viewModel.editWebsiteFooterText.collectAsStateWithLifecycle()
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Surface(
+            color = Color(0xFF0284C7).copy(alpha = 0.15f),
+            shape = RoundedCornerShape(20.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF0284C7).copy(alpha = 0.4f))
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = "🌐", fontSize = 12.sp)
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "২য় সেকশন: ওয়েবসাইট কন্ট্রোল (Website Control)",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF38BDF8)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(text = "Website & Portal Control Center", fontSize = 20.sp, fontWeight = FontWeight.Black, color = TextPrimary)
+        Text(
+            text = "পাবলিক ল্যান্ডিং ওয়েবসাইট, শিরোনাম, ডাউনলোড ব্যাজ, রক্তদাতা ডিরেক্টরি ও কনটেন্ট পরিচালনা",
+            fontSize = 12.sp,
+            color = Color(0xFF38BDF8).copy(alpha = 0.8f)
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // 1. Website Title & Announcement Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = DarkSurfaceCard),
+            shape = RoundedCornerShape(14.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF0284C7).copy(alpha = 0.5f))
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "🌐", fontSize = 18.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Website Title & Top Announcement",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "ব্রাউজার ট্যাব টাইটেল এবং ওয়েবসাইটের মূল হেডার টাইটেল",
+                    fontSize = 11.sp,
+                    color = TextSecondary
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(text = "ওয়েবসাইট ব্রাউজার টাইটেল (Browser Tab Title):", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.SemiBold)
+                Spacer(modifier = Modifier.height(4.dp))
+                OutlinedTextField(
+                    value = editWebTitle,
+                    onValueChange = { viewModel.editWebsiteTitle.value = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF0284C7),
+                        unfocusedBorderColor = Color(0xFF475569),
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(text = "ওয়েবসাইটের শীর্ষ এনাউন্সমেন্ট ব্যাজ (Top Announcement Badge):", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.SemiBold)
+                Spacer(modifier = Modifier.height(4.dp))
+                OutlinedTextField(
+                    value = editWebAnnouncement,
+                    onValueChange = { viewModel.editWebsiteAnnouncement.value = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF0284C7),
+                        unfocusedBorderColor = Color(0xFF475569),
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(10.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // 2. Hero Headlines Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = DarkSurfaceCard),
+            shape = RoundedCornerShape(14.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF334155))
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "✨", fontSize = 18.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Hero Banner Headlines / মূল ব্যানার ও বার্তা",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(text = "মূল শিরোনাম (Hero Main Headline):", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.SemiBold)
+                Spacer(modifier = Modifier.height(4.dp))
+                OutlinedTextField(
+                    value = editWebHeroTitle,
+                    onValueChange = { viewModel.editWebsiteHeroTitle.value = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF0284C7),
+                        unfocusedBorderColor = Color(0xFF475569),
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(text = "সাব-টাইটেল / বিস্তারিত বার্তা (Hero Subtitle):", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.SemiBold)
+                Spacer(modifier = Modifier.height(4.dp))
+                OutlinedTextField(
+                    value = editWebHeroSubtitle,
+                    onValueChange = { viewModel.editWebsiteHeroSubtitle.value = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF0284C7),
+                        unfocusedBorderColor = Color(0xFF475569),
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(10.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // 3. APK Version & Public Donors Directory
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = DarkSurfaceCard),
+            shape = RoundedCornerShape(14.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF334155))
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(text = "ওয়েবসাইটের প্রদর্শিত APK সংস্করণ (APK Version Badge):", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.SemiBold)
+                Spacer(modifier = Modifier.height(4.dp))
+                OutlinedTextField(
+                    value = editWebApkVersion,
+                    onValueChange = { viewModel.editWebsiteApkVersion.value = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF0284C7),
+                        unfocusedBorderColor = Color(0xFF475569),
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = "ওয়েবসাইটে রক্তদাতা তালিকা প্রদর্শন", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                        Text(text = "পাবলিক ওয়েবসাইটে লাইভ ডোনার ডিরেক্টরি প্রদর্শন করার সুইচ", fontSize = 11.sp, color = TextSecondary)
+                    }
+                    Switch(
+                        checked = editWebShowDonors,
+                        onCheckedChange = { viewModel.editWebsiteShowPublicDonors.value = it },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = Color(0xFF0284C7)
+                        )
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // 4. Helpline, Support Email & Footer
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = DarkSurfaceCard),
+            shape = RoundedCornerShape(14.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF334155))
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = "📞 ওয়েবসাইটের পাবলিক হটলাইন", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        OutlinedTextField(
+                            value = editWebHelpline,
+                            onValueChange = { viewModel.editWebsiteHelpline.value = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color(0xFF0284C7),
+                                unfocusedBorderColor = Color(0xFF475569),
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                    }
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = "✉️ সাপোর্ট ইমেইল", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        OutlinedTextField(
+                            value = editWebEmail,
+                            onValueChange = { viewModel.editWebsiteSupportEmail.value = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color(0xFF0284C7),
+                                unfocusedBorderColor = Color(0xFF475569),
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = "ওয়েবসাইট মেইন্টেন্যান্স মোড", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                        Text(text = "সক্রিয় করলে ওয়েবসাইটে মেইন্টেন্যান্স স্ক্রিন ভেসে উঠবে", fontSize = 11.sp, color = TextSecondary)
+                    }
+                    Switch(
+                        checked = editWebMaintenance,
+                        onCheckedChange = { viewModel.editWebsiteMaintenance.value = it },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = Color(0xFFF59E0B)
+                        )
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Text(text = "ওয়েবসাইট ফুটার কপিরাইট টেক্সট:", fontSize = 11.sp, color = TextPrimary, fontWeight = FontWeight.SemiBold)
+                Spacer(modifier = Modifier.height(4.dp))
+                OutlinedTextField(
+                    value = editWebFooterText,
+                    onValueChange = { viewModel.editWebsiteFooterText.value = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF0284C7),
+                        unfocusedBorderColor = Color(0xFF475569),
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(10.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Save Button for Website Control
+        Button(
+            onClick = { viewModel.saveWebsiteSettings() },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp)
+                .testTag("admin_save_website_settings_button"),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color.White)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Save Website Controls & Publish Live",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+        }
+
+        Spacer(modifier = Modifier.height(30.dp))
+    }
+}
+
+@Composable
+fun AdminSettingsTab(viewModel: EBloodViewModel) {
+    AdminAppControlTab(viewModel = viewModel)
 }
 
 @Composable

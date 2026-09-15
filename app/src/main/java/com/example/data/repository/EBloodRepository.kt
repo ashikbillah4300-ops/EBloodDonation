@@ -134,6 +134,7 @@ class EBloodRepository(private val dao: AppDao) {
         val existingDonationNumber = dao.getSettingValue("donation_number")
         if (existingDonationNumber == null) {
             val defaults = listOf(
+                com.example.data.model.AppSetting("app_logo_url", "/logo.svg"),
                 com.example.data.model.AppSetting("donation_number", "01969114300"),
                 com.example.data.model.AppSetting("contact_number", "01969114300"),
                 com.example.data.model.AppSetting("support_number", "01969114300"),

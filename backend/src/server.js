@@ -13,8 +13,12 @@ const PORT = process.env.PORT || 5000;
 
 // Middlewares
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ extended: true, limit: '20mb' }));
+
+// Serve static assets (logos, uploads, icons, styles)
+app.use(express.static(path.join(__dirname, '../public')));
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
 // Serve Landing & APK Download Page on Root (/)
 app.get('/', (req, res) => {
@@ -69,16 +73,17 @@ app.use('/api', apiRoutes);
 // Seed default Admin if not exists or update primary admin
 const seedDefaultAdminIfEmpty = async () => {
   try {
-    const defaultUsername = process.env.DEFAULT_ADMIN_USERNAME || 'ashikbillah';
-    const defaultEmail = process.env.DEFAULT_ADMIN_EMAIL || 'ashikbillah4300@gmail.com';
+    const defaultUsername = process.env.DEFAULT_ADMIN_USERNAME || 'ashikbillah4300@gmail.com';
+    const defaultEmail = (process.env.DEFAULT_ADMIN_EMAIL || 'ashikbillah4300@gmail.com').toLowerCase();
     const defaultPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'ashik@2008';
 
     // Find if primary admin exists
     let admin = await AdminUser.findOne({
       where: {
         [require('sequelize').Op.or]: [
-          { email: defaultEmail.toLowerCase() },
+          { email: defaultEmail },
           { username: defaultUsername },
+          { username: 'ashikbillah' },
           { username: 'admin' }
         ]
       }

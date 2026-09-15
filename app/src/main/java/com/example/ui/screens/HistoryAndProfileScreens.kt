@@ -73,6 +73,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.BloodRequest
+import com.example.ui.theme.CrimsonContainer
 import com.example.ui.theme.CrimsonPrimary
 import com.example.ui.theme.DarkBackground
 import com.example.ui.theme.DarkSurfaceBorder
@@ -276,6 +277,8 @@ fun ProfileScreen(viewModel: EBloodViewModel) {
     val isAvailable = user?.isAvailable ?: true
     val soundEnabled = user?.alarmSoundEnabled ?: true
     val vibEnabled = user?.alarmVibrationEnabled ?: true
+    val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
+    val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
 
     Box(
         modifier = Modifier
@@ -449,6 +452,100 @@ fun ProfileScreen(viewModel: EBloodViewModel) {
                         onClick = { viewModel.setBottomTab(2) }
                     )
 
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(DarkSurfaceBorder))
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Theme Appearance Mode Section
+                    Text(
+                        text = "App Appearance / থিম মোড",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Choose between Light and Dark mode",
+                        fontSize = 12.sp,
+                        color = TextSecondary
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Theme Mode Selector Pills
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        ThemeOptionPill(
+                            icon = "☀️",
+                            title = "Light",
+                            subtitle = "লাইট",
+                            isSelected = themeMode == "LIGHT",
+                            modifier = Modifier.weight(1f),
+                            onClick = { viewModel.setThemeMode("LIGHT") }
+                        )
+
+                        ThemeOptionPill(
+                            icon = "🌙",
+                            title = "Dark",
+                            subtitle = "ডার্ক",
+                            isSelected = themeMode == "DARK",
+                            modifier = Modifier.weight(1f),
+                            onClick = { viewModel.setThemeMode("DARK") }
+                        )
+
+                        ThemeOptionPill(
+                            icon = "📱",
+                            title = "System",
+                            subtitle = "সিস্টেম",
+                            isSelected = themeMode == "SYSTEM",
+                            modifier = Modifier.weight(1f),
+                            onClick = { viewModel.setThemeMode("SYSTEM") }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Quick Dark Mode Switch
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = if (isDarkMode) "🌙" else "☀️", fontSize = 18.sp)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = if (isDarkMode) "Dark Mode" else "Light Mode",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = TextPrimary
+                                )
+                                Text(
+                                    text = if (isDarkMode) "ডার্ক মোড সক্রিয় আছে" else "লাইট মোড সক্রিয় আছে",
+                                    fontSize = 11.sp,
+                                    color = TextSecondary
+                                )
+                            }
+                        }
+                        Switch(
+                            checked = isDarkMode,
+                            onCheckedChange = { viewModel.toggleDarkMode() },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = CrimsonPrimary
+                            ),
+                            modifier = Modifier.testTag("profile_dark_mode_switch")
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(DarkSurfaceBorder))
+                    Spacer(modifier = Modifier.height(8.dp))
+
                     // Alarm Sound Toggle
                     Row(
                         modifier = Modifier
@@ -509,6 +606,34 @@ fun ProfileScreen(viewModel: EBloodViewModel) {
 
             Spacer(modifier = Modifier.height(20.dp))
 
+            // Admin Panel Entry (Always requires ashik@2008 password)
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .clickable { viewModel.openAdminPanel() }
+                    .testTag("open_admin_panel_button"),
+                color = Color(0xFF1E1B4B),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF6366F1).copy(alpha = 0.5f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(14.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = "🛡️", fontSize = 16.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Admin Control Panel (এডমিন প্যানেল)",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFA5B4FC)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             // Sign Out Button
             Surface(
                 modifier = Modifier
@@ -516,7 +641,7 @@ fun ProfileScreen(viewModel: EBloodViewModel) {
                     .clip(RoundedCornerShape(14.dp))
                     .clickable { viewModel.signOut() }
                     .testTag("sign_out_button"),
-                color = Color(0xFF22111E),
+                color = CrimsonContainer,
                 border = androidx.compose.foundation.BorderStroke(1.dp, CrimsonPrimary.copy(alpha = 0.4f))
             ) {
                 Row(
@@ -700,6 +825,47 @@ fun ProfileSettingActionItem(
             tint = TextMuted,
             modifier = Modifier.size(16.dp)
         )
+    }
+}
+
+@Composable
+fun ThemeOptionPill(
+    icon: String,
+    title: String,
+    subtitle: String,
+    isSelected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .testTag("theme_pill_${title.lowercase()}"),
+        color = if (isSelected) CrimsonPrimary else DarkSurfaceElevated,
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            if (isSelected) CrimsonPrimary else DarkSurfaceBorder
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(vertical = 10.dp, horizontal = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(text = icon, fontSize = 18.sp)
+            Spacer(modifier = Modifier.height(3.dp))
+            Text(
+                text = title,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (isSelected) Color.White else TextPrimary
+            )
+            Text(
+                text = subtitle,
+                fontSize = 10.sp,
+                color = if (isSelected) Color.White.copy(alpha = 0.85f) else TextSecondary
+            )
+        }
     }
 }
 

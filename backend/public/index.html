@@ -20,7 +20,7 @@
     <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
       <div class="flex items-center justify-center mb-6">
         <div class="w-16 h-16 rounded-2xl bg-white p-2.5 flex items-center justify-center shadow-lg shadow-rose-900/30">
-          <img src="/logo.svg" alt="EBlood Donation" class="w-full h-full object-contain">
+          <img src="/logo.svg" alt="EBlood Donation" class="app-brand-logo w-full h-full object-contain">
         </div>
       </div>
       <h2 class="text-2xl font-black text-center text-white tracking-tight">EBlood Admin Portal</h2>
@@ -59,7 +59,7 @@
         <!-- Logo -->
         <div class="flex items-center space-x-3 mb-8">
           <div class="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center shadow-md shadow-rose-600/30">
-            <img src="/logo.svg" alt="EBlood Admin" class="w-full h-full object-contain">
+            <img src="/logo.svg" alt="EBlood Admin" class="app-brand-logo w-full h-full object-contain">
           </div>
           <div>
             <h1 class="text-sm font-black text-white tracking-wide">EBlood Admin</h1>
@@ -69,26 +69,54 @@
 
         <!-- Nav Links -->
         <nav class="space-y-1.5" id="navLinks">
-          <button onclick="switchTab('overview')" class="nav-item active w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-rose-600 text-white transition">
-            <span>📊</span>
-            <span>Dashboard</span>
-          </button>
-          <button onclick="switchTab('users')" class="nav-item w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition">
-            <span>👥</span>
-            <span>User Management</span>
-          </button>
-          <button onclick="switchTab('requests')" class="nav-item w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition">
-            <span>🩸</span>
-            <span>Blood Requests</span>
-          </button>
-          <button onclick="switchTab('settings')" class="nav-item w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition">
-            <span>⚙️</span>
-            <span>App Settings</span>
-          </button>
-          <button onclick="switchTab('architecture')" class="nav-item w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition">
-            <span>🔄</span>
-            <span>API & Architecture</span>
-          </button>
+          <!-- 1st SECTION: App Control (Requested by user) -->
+          <div class="pt-0.5 pb-1">
+            <p class="text-[10px] font-black text-rose-400 uppercase tracking-wider px-3 mb-1 flex items-center gap-1.5">
+              <span>📱</span> <span>১ম সেকশন: অ্যাপ কন্ট্রোল</span>
+            </p>
+            <button onclick="switchTab('app-control')" id="nav-app-control" class="nav-item active w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-rose-600 text-white shadow-md shadow-rose-900/30 transition">
+              <span class="text-base">📱</span>
+              <div class="text-left">
+                <span class="block">App Control</span>
+                <span class="text-[10px] font-normal opacity-90">অ্যাপের লোগো, নোটিশ ও কন্ট্রোল</span>
+              </div>
+            </button>
+          </div>
+
+          <!-- 2nd SECTION: Website Control (Requested by user) -->
+          <div class="pt-1 pb-2 border-b border-slate-800/80">
+            <p class="text-[10px] font-black text-sky-400 uppercase tracking-wider px-3 mb-1 flex items-center gap-1.5">
+              <span>🌐</span> <span>২য় সেকশন: ওয়েবসাইট কন্ট্রোল</span>
+            </p>
+            <button onclick="switchTab('website-control')" id="nav-website-control" class="nav-item w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition">
+              <span class="text-base">🌐</span>
+              <div class="text-left">
+                <span class="block">Website Control</span>
+                <span class="text-[10px] text-slate-400">ওয়েবসাইট কনটেন্ট ও ডিরেক্টরি</span>
+              </div>
+            </button>
+          </div>
+
+          <!-- System & Management Links -->
+          <div class="pt-1">
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-1.5">সিস্টেম ও ডেটাবেজ</p>
+            <button onclick="switchTab('overview')" id="nav-overview" class="nav-item w-full flex items-center space-x-3 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition">
+              <span>📊</span>
+              <span>Live Dashboard</span>
+            </button>
+            <button onclick="switchTab('users')" id="nav-users" class="nav-item w-full flex items-center space-x-3 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition">
+              <span>👥</span>
+              <span>User Management</span>
+            </button>
+            <button onclick="switchTab('requests')" id="nav-requests" class="nav-item w-full flex items-center space-x-3 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition">
+              <span>🩸</span>
+              <span>Blood Requests</span>
+            </button>
+            <button onclick="switchTab('architecture')" id="nav-architecture" class="nav-item w-full flex items-center space-x-3 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition">
+              <span>🔄</span>
+              <span>API & Architecture</span>
+            </button>
+          </div>
         </nav>
       </div>
 
@@ -284,27 +312,100 @@
         </div>
       </section>
 
-      <!-- TAB 4: APP SETTINGS (REAL-TIME CONFIGURATION) -->
-      <section id="tab-settings" class="hidden space-y-6">
-        <div>
-          <h2 class="text-2xl font-black tracking-tight text-white">Dynamic App Settings</h2>
-          <p class="text-xs text-slate-400">Modify numbers, announcement notices, and maintenance mode without rebuilding the mobile app</p>
+      <!-- ========================================== -->
+      <!-- SECTION 1: 📱 MOBILE APP CONTROL CENTER    -->
+      <!-- ========================================== -->
+      <section id="tab-app-control" class="space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+          <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-950/70 border border-rose-800/60 text-rose-300 text-[11px] font-bold mb-1">
+              <span>📱</span>
+              <span>১ম সেকশন: মোবাইল অ্যাপ কন্ট্রোল</span>
+            </div>
+            <h2 class="text-2xl font-black tracking-tight text-white">Mobile App Control Center</h2>
+            <p class="text-xs text-slate-400">অ্যান্ড্রয়েড অ্যাপের ব্র্যান্ডিং, লোগো, ডিপোজিট গেটওয়ে, জরুরি নোটিশ ও সিস্টেম কন্ট্রোল</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-emerald-400 font-bold flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+              <span>App Sync Live</span>
+            </span>
+          </div>
         </div>
 
-        <form id="settingsForm" class="space-y-6 max-w-2xl bg-slate-900 border border-slate-800 p-6 rounded-2xl">
-          <!-- DEPOSIT NUMBER & GATEWAY MANAGEMENT (Requested by User) -->
-          <div class="p-5 rounded-xl bg-gradient-to-br from-rose-950/40 to-slate-900 border border-rose-900/60 space-y-4">
+        <form id="appControlForm" class="space-y-6 max-w-3xl">
+          <!-- 1. LOGO UPLOAD & BRANDING -->
+          <div class="p-5 rounded-2xl bg-gradient-to-br from-indigo-950/40 via-slate-900 to-slate-900 border border-indigo-700/60 space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2.5">
+                <span class="text-2xl">🎨</span>
+                <div>
+                  <h3 class="text-sm font-black text-indigo-300">App Logo & Branding / অ্যাপের লোগো ও নাম</h3>
+                  <p class="text-[11px] text-slate-300">এখানে লোগো পরিবর্তন করলে অ্যান্ড্রয়েড অ্যাপের স্প্ল্যাশ স্ক্রিন ও হেডার স্বয়ংক্রিয়ভাবে আপডেট হবে।</p>
+                </div>
+              </div>
+              <span class="px-2.5 py-0.5 text-[10px] font-bold bg-indigo-900/60 text-indigo-300 rounded-full border border-indigo-700/50">Auto Sync</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center pt-1">
+              <!-- Current Logo Preview -->
+              <div class="sm:col-span-4 flex flex-col items-center justify-center p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl text-center">
+                <p class="text-[10px] font-semibold text-slate-400 mb-1.5">বর্তমান সক্রিয় লোগো</p>
+                <div class="w-20 h-20 rounded-xl bg-white p-2.5 flex items-center justify-center shadow-lg border border-slate-700">
+                  <img id="currentLogoPreview" src="/logo.svg" alt="Active Logo" class="app-brand-logo w-full h-full object-contain">
+                </div>
+                <p id="currentLogoUrlText" class="text-[9px] text-slate-500 font-mono mt-1.5 max-w-[140px] truncate">/logo.svg</p>
+              </div>
+
+              <!-- Upload Controls -->
+              <div class="sm:col-span-8 space-y-2.5">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-200 mb-1">
+                    📁 নতুন লোগো ফাইল আপলোড করুন (PNG, JPG, SVG, WebP)
+                  </label>
+                  <input type="file" id="logoFileInput" accept="image/png, image/jpeg, image/svg+xml, image/webp" class="block w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-rose-600 file:text-white hover:file:bg-rose-500 file:cursor-pointer bg-slate-800/90 border border-slate-700 rounded-xl p-1">
+                  <p class="text-[10px] text-slate-400 mt-1">সুপারিশ: স্বচ্ছ ব্যাকগ্রাউন্ড (Transparent PNG/SVG) বা স্কয়ার সাইজ</p>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-semibold text-slate-300 mb-1">অথবা লোগোর ইমেজ লিঙ্ক দিন (Direct Image URL)</label>
+                  <input type="url" id="logoUrlInput" class="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs font-mono placeholder-slate-500" placeholder="https://domain.com/logo.png">
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex items-center gap-2 pt-1">
+                  <button type="button" onclick="uploadNewLogo()" id="uploadLogoBtn" class="flex-1 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-md shadow-rose-900/30 flex items-center justify-center space-x-1.5 transition">
+                    <span>📤 লোগো আপলোড ও সেট করুন</span>
+                  </button>
+                  <button type="button" onclick="resetToDefaultLogo()" id="resetLogoBtn" title="Reset to original default logo" class="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition">
+                    <span>🔄 ডিফল্ট</span>
+                  </button>
+                </div>
+
+                <div id="logoFeedback" class="hidden p-2 rounded-lg text-xs font-medium"></div>
+              </div>
+            </div>
+
+            <!-- App Name in App Control -->
+            <div class="pt-2 border-t border-slate-800/80">
+              <label class="block text-xs font-semibold text-slate-300 mb-1">অ্যান্ড্রয়েড অ্যাপের প্রদর্শিত নাম (App Display Name)</label>
+              <input type="text" id="setting_app_name" class="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-bold focus:outline-none focus:border-indigo-500" placeholder="EBlood Donation">
+            </div>
+          </div>
+
+          <!-- 2. DEPOSIT GATEWAY & DONATION NUMBERS -->
+          <div class="p-5 rounded-2xl bg-gradient-to-br from-rose-950/40 to-slate-900 border border-rose-900/60 space-y-4">
             <div class="flex items-center space-x-2">
               <span class="text-xl">💳</span>
               <div>
                 <label class="block text-sm font-black text-rose-300">Deposit Gateway & Number (বিকাশ / নগদ / রকেট)</label>
-                <p class="text-[11px] text-slate-400">Select payment service and number. It instantly updates the mobile app's deposit/donation modal.</p>
+                <p class="text-[11px] text-slate-400">অ্যাপে ইউজার ডিপোজিট বা ডোনেশন বাটনে ক্লিক করলে এখানে সেট করা গেটওয়ে ও নম্বরটি প্রদর্শিত হবে।</p>
               </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">Select Gateway / মেথড</label>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">ডিপোজিট মেথড (Payment Gateway)</label>
                 <select id="setting_deposit_method" onchange="onDepositMethodChange()" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-bold focus:outline-none focus:border-rose-500">
                   <option value="bKash">bKash (বিকাশ Personal)</option>
                   <option value="Nagad">Nagad (নগদ Personal)</option>
@@ -313,7 +414,7 @@
               </div>
 
               <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">Deposit Number / নম্বর</label>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">ডিপোজিট নম্বর (Account Number)</label>
                 <input type="text" id="setting_donation_number" class="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm font-mono font-bold focus:outline-none focus:border-rose-500" placeholder="01969114300">
               </div>
             </div>
@@ -323,43 +424,188 @@
             </p>
           </div>
 
-          <!-- Emergency Notice -->
-          <div class="p-4 rounded-xl bg-red-950/30 border border-red-900/60">
-            <label class="block text-xs font-bold text-red-300 mb-1">Emergency Crisis Banner (Red Alert)</label>
-            <p class="text-[11px] text-slate-400 mb-2">Leave blank to disable. If text is entered, it appears as an urgent red announcement card at the top of the mobile home screen.</p>
-            <textarea id="setting_emergency_notice" rows="2" class="w-full px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-red-500" placeholder="e.g. Urgent crisis: O- blood needed at DMCH..."></textarea>
+          <!-- 3. EMERGENCY CRISIS ALERT (RED BANNER) -->
+          <div class="p-4 rounded-2xl bg-red-950/30 border border-red-900/60 space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-bold text-red-300">🚨 Emergency Crisis Banner (রেড এলার্ট ব্যানার)</label>
+              <span class="text-[10px] text-red-400 bg-red-950 px-2 py-0.5 rounded border border-red-800">Critical Priority</span>
+            </div>
+            <p class="text-[11px] text-slate-400">এখানে কোনো টেক্সট লিখলে তা সরাসরি মোবাইল অ্যাপের হোম স্ক্রিনের শীর্ষে লাল এলার্ট কার্ড হিসেবে রিয়েল-টাইমে শো করবে। বন্ধ রাখতে খালি রাখুন।</p>
+            <textarea id="setting_emergency_notice" rows="2" class="w-full px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-red-500" placeholder="যেমন: ঢাকা মেডিকেলে জরুরি ভিত্তিতে ২ ব্যাগ O- পজিটিভ রক্ত প্রয়োজন..."></textarea>
           </div>
 
-          <!-- General App Notice -->
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">General App Notice</label>
-            <input type="text" id="setting_app_notice" class="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500" placeholder="General announcement text">
+          <!-- 4. GENERAL APP NOTICE -->
+          <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
+            <label class="block text-xs font-semibold text-slate-300">📢 General App Announcement (সাধারণ নোটিশ)</label>
+            <p class="text-[11px] text-slate-400">অ্যাপের নোটিশ বার বা ঘোষণা টেক্সট</p>
+            <input type="text" id="setting_app_notice" class="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500" placeholder="রক্তদানে এগিয়ে আসুন, জীবন বাঁচান। যেকোনো প্রয়োজনে আমাদের কল করুন।">
           </div>
 
-          <!-- Contact & Support -->
+          <!-- 5. CONTACT & SUPPORT NUMBERS FOR APP -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">Support Phone Number</label>
-              <input type="text" id="setting_support_number" class="w-full px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs" placeholder="+8801969114300">
+            <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800">
+              <label class="block text-xs font-semibold text-slate-300 mb-1">📞 App Support Helpline</label>
+              <input type="text" id="setting_support_number" class="w-full px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-mono font-bold" placeholder="+8801969114300">
             </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">Contact Phone Number</label>
-              <input type="text" id="setting_contact_number" class="w-full px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs" placeholder="+8801969114300">
+            <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800">
+              <label class="block text-xs font-semibold text-slate-300 mb-1">📱 App Contact Phone Number</label>
+              <input type="text" id="setting_contact_number" class="w-full px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-mono font-bold" placeholder="+8801969114300">
             </div>
           </div>
 
-          <!-- Maintenance Mode Toggle -->
-          <div class="flex items-center justify-between p-4 rounded-xl bg-slate-800/60 border border-slate-700">
-            <div>
-              <p class="text-xs font-bold text-white">Maintenance Mode</p>
-              <p class="text-[10px] text-slate-400">Notify mobile users that the servers are currently undergoing maintenance</p>
+          <!-- 6. APP MAINTENANCE & SOS ALARM SWITCHES -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Mobile App Maintenance Mode -->
+            <div class="flex items-center justify-between p-4 rounded-2xl bg-slate-900 border border-slate-800">
+              <div>
+                <p class="text-xs font-bold text-white">App Maintenance Mode</p>
+                <p class="text-[10px] text-slate-400">অ্যাপ ইউজারদের সাময়িক মেইন্টেন্যান্স মেসেজ দেখানো</p>
+              </div>
+              <input type="checkbox" id="setting_maintenance_mode" class="w-5 h-5 accent-rose-600 rounded cursor-pointer">
             </div>
-            <input type="checkbox" id="setting_maintenance_mode" class="w-5 h-5 accent-rose-600 rounded">
+
+            <!-- Emergency SOS Audible Siren -->
+            <div class="flex items-center justify-between p-4 rounded-2xl bg-slate-900 border border-slate-800">
+              <div>
+                <p class="text-xs font-bold text-white">Emergency SOS Alarm</p>
+                <p class="text-[10px] text-slate-400">ক্রিটিক্যাল রিকোয়েস্টে অডিও সাইরেন সক্রিয় রাখা</p>
+              </div>
+              <input type="checkbox" id="setting_app_sos_alarm_enabled" class="w-5 h-5 accent-red-600 rounded cursor-pointer" checked>
+            </div>
           </div>
 
-          <button type="button" onclick="saveSettings()" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-rose-900/30 transition">
-            Save All Settings & Sync with Mobile App
+          <!-- Save Button for App Control -->
+          <button type="button" onclick="saveAppSettings()" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-rose-900/30 flex items-center justify-center gap-2 transition">
+            <span>💾 Save Mobile App Controls & Sync</span>
           </button>
+        </form>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- SECTION 2: 🌐 WEBSITE & LANDING PORTAL CONTROL -->
+      <!-- ========================================== -->
+      <section id="tab-website-control" class="hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+          <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-950/70 border border-sky-800/60 text-sky-300 text-[11px] font-bold mb-1">
+              <span>🌐</span>
+              <span>২য় সেকশন: ওয়েবসাইট কন্ট্রোল</span>
+            </div>
+            <h2 class="text-2xl font-black tracking-tight text-white">Website & Portal Control Center</h2>
+            <p class="text-xs text-slate-400">পাবলিক ল্যান্ডিং ওয়েবসাইট (`landing.html`), শিরোনাম, ডাউনলোড ব্যাজ, রক্তদাতা ডিরেক্টরি ও কনটেন্ট পরিচালনা</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <a href="/" target="_blank" class="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow-md shadow-sky-900/30 flex items-center gap-1.5 transition">
+              <span>👁️</span>
+              <span>লাইভ ওয়েবসাইট দেখুন</span>
+            </a>
+          </div>
+        </div>
+
+        <form id="websiteControlForm" class="space-y-6 max-w-3xl">
+          <!-- 1. WEBSITE TITLE & BRANDING -->
+          <div class="p-5 rounded-2xl bg-gradient-to-br from-sky-950/40 via-slate-900 to-slate-900 border border-sky-800/60 space-y-4">
+            <div class="flex items-center space-x-2.5">
+              <span class="text-2xl">🌐</span>
+              <div>
+                <h3 class="text-sm font-black text-sky-300">Website Title & Meta / ওয়েবসাইটের টাইটেল ও শিরোনাম</h3>
+                <p class="text-[11px] text-slate-300">ব্রাউজার ট্যাব টাইটেল এবং ওয়েবসাইটের মূল হেডার টাইটেল</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-3.5">
+              <div>
+                <label class="block text-xs font-semibold text-slate-200 mb-1">ওয়েবসাইট ব্রাউজার টাইটেল (Browser Tab Title)</label>
+                <input type="text" id="setting_website_title" class="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-semibold focus:outline-none focus:border-sky-500" placeholder="EBlood Donation — রক্তদান ও সেবা প্ল্যাটফর্ম">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-200 mb-1">ওয়েবসাইটের শীর্ষ এনাউন্সমেন্ট ব্যাজ (Top Announcement Badge)</label>
+                <input type="text" id="setting_website_announcement" class="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-sky-500" placeholder="জরুরি রক্তদান ও তাৎক্ষণিক ডোনার খোঁজার নির্ভরযোগ্য প্ল্যাটফর্ম">
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. HERO SECTION HEADLINES -->
+          <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+            <div class="flex items-center space-x-2.5">
+              <span class="text-xl">✨</span>
+              <div>
+                <h3 class="text-sm font-black text-white">Hero Banner / ওয়েবসাইটের মূল ব্যানার ও বার্তা</h3>
+                <p class="text-[11px] text-slate-400">ভিজিটররা ওয়েবসাইটে প্রবেশ করলেই যে বড় ব্যানার ও টেক্সট দেখতে পাবেন</p>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">মূল শিরোনাম (Hero Main Headline)</label>
+              <input type="text" id="setting_website_hero_title" class="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-bold focus:outline-none focus:border-sky-500" placeholder="এক ক্লিকেই রক্তদাতা খুঁজুন, বাঁচান একটি মূল্যবান জীবন">
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">সাব-টাইটেল / বিস্তারিত বার্তা (Hero Subtitle)</label>
+              <textarea id="setting_website_hero_subtitle" rows="2" class="w-full px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-sky-500" placeholder="আপনার এরিয়ার ভেরিফায়েড রক্তদাতা, রিয়েল-টাইম ব্লাড রিকোয়েস্ট, লাইভ হসপিটাল ডিরেক্টরি এবং ২৪/৭ জরুরি হটলাইন সার্ভিস — সবই এখন একটি প্ল্যাটফর্মে।"></textarea>
+            </div>
+          </div>
+
+          <!-- 3. APK DOWNLOAD VERSION & DIRECTORY CONTROLS -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- APK Version Label -->
+            <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
+              <label class="block text-xs font-semibold text-slate-300">📦 প্রদর্শিত APK সংস্করণ (Version Badge)</label>
+              <p class="text-[10px] text-slate-400">ওয়েবসাইটের ডাউনলোড বাটনের পাশে প্রদর্শিত ভার্সন</p>
+              <input type="text" id="setting_website_apk_version" class="w-full px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-mono font-bold" placeholder="v1.0 Live APK">
+            </div>
+
+            <!-- Public Blood Donors Directory Toggle -->
+            <div class="flex items-center justify-between p-4 rounded-2xl bg-slate-900 border border-slate-800">
+              <div class="pr-2">
+                <p class="text-xs font-bold text-white">ওয়েবসাইটে রক্তদাতা তালিকা প্রদর্শন</p>
+                <p class="text-[10px] text-slate-400">পাবলিক ওয়েবসাইটে লাইভ ডোনার ডিরেক্টরি শো/হাইড করার সুইচ</p>
+              </div>
+              <input type="checkbox" id="setting_website_show_public_donors" class="w-5 h-5 accent-sky-500 rounded cursor-pointer" checked>
+            </div>
+          </div>
+
+          <!-- 4. WEBSITE SUPPORT & CONTACT INFO -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800">
+              <label class="block text-xs font-semibold text-slate-300 mb-1">📞 ওয়েবসাইটের পাবলিক হটলাইন</label>
+              <input type="text" id="setting_website_helpline" class="w-full px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-mono font-bold" placeholder="+8801969114300">
+            </div>
+
+            <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800">
+              <label class="block text-xs font-semibold text-slate-300 mb-1">✉️ সাপোর্ট ইমেইল (Website Support Email)</label>
+              <input type="email" id="setting_website_support_email" class="w-full px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-mono" placeholder="support@eblood.org">
+            </div>
+          </div>
+
+          <!-- 5. WEBSITE MAINTENANCE & FOOTER TEXT -->
+          <div class="space-y-4">
+            <!-- Website Maintenance Switch -->
+            <div class="flex items-center justify-between p-4 rounded-2xl bg-amber-950/20 border border-amber-900/40">
+              <div>
+                <p class="text-xs font-bold text-amber-300">ওয়েবসাইট মেইন্টেন্যান্স মোড (Website Maintenance)</p>
+                <p class="text-[10px] text-slate-400">সক্রিয় করলে ওয়েবসাইটে মেইন্টেন্যান্স স্ক্রিন ভেসে উঠবে</p>
+              </div>
+              <input type="checkbox" id="setting_website_maintenance" class="w-5 h-5 accent-amber-500 rounded cursor-pointer">
+            </div>
+
+            <!-- Footer Text -->
+            <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800">
+              <label class="block text-xs font-semibold text-slate-300 mb-1">ওয়েবসাইট ফুটার কপিরাইট টেক্সট (Footer Text)</label>
+              <input type="text" id="setting_website_footer_text" class="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs" placeholder="© 2026 EBlood Donation. সকল অধিকার সংরক্ষিত। জীবন রক্ষায় একটি মানবিক প্ল্যাটফর্ম।">
+            </div>
+          </div>
+
+          <!-- Save Button for Website Control -->
+          <div class="flex items-center gap-3">
+            <button type="button" onclick="saveWebsiteSettings()" class="flex-1 py-3.5 px-4 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-sky-900/30 flex items-center justify-center gap-2 transition">
+              <span>💾 Save Website Controls & Publish</span>
+            </button>
+            <a href="/" target="_blank" class="py-3.5 px-5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition">
+              <span>ওয়েবসাইট দেখুন ↗</span>
+            </a>
+          </div>
         </form>
       </section>
 
@@ -401,20 +647,24 @@
   <!-- ================= JAVASCRIPT LOGIC ================= -->
   <script>
     const API_BASE = window.location.origin;
-    let authToken = localStorage.getItem('eblood_admin_token') || '';
+    let authToken = '';
 
-    // Initialize
+    // Initialize: Always demand password every time admin panel is entered
     window.addEventListener('DOMContentLoaded', () => {
-      if (authToken) {
-        showDashboard();
-      } else {
-        showLogin();
-      }
+      // Never auto-bypass login; always require password on every entry
+      authToken = '';
+      localStorage.removeItem('eblood_admin_token');
+      sessionStorage.removeItem('eblood_admin_token');
+      showLogin();
+      const userField = document.getElementById('loginUsername');
+      const passField = document.getElementById('loginPassword');
+      if (userField) userField.value = 'ashikbillah4300@gmail.com';
+      if (passField) passField.value = '';
     });
 
     // Tab Switching
     function switchTab(tabId) {
-      const tabs = ['overview', 'users', 'requests', 'settings', 'architecture'];
+      const tabs = ['app-control', 'website-control', 'overview', 'users', 'requests', 'architecture'];
       tabs.forEach(t => {
         const el = document.getElementById('tab-' + t);
         if (el) el.classList.add('hidden');
@@ -424,14 +674,24 @@
 
       // Update sidebar styling
       document.querySelectorAll('#navLinks button').forEach(btn => {
-        btn.classList.remove('bg-rose-600', 'text-white');
+        btn.classList.remove('bg-rose-600', 'bg-sky-600', 'text-white', 'shadow-md');
         btn.classList.add('text-slate-300');
       });
 
+      const navBtn = document.getElementById('nav-' + tabId);
+      if (navBtn) {
+        navBtn.classList.remove('text-slate-300');
+        if (tabId === 'website-control') {
+          navBtn.classList.add('bg-sky-600', 'text-white', 'shadow-md', 'shadow-sky-900/30');
+        } else {
+          navBtn.classList.add('bg-rose-600', 'text-white', 'shadow-md', 'shadow-rose-900/30');
+        }
+      }
+
+      if (tabId === 'app-control' || tabId === 'website-control') fetchSettings();
       if (tabId === 'overview') fetchStats();
       if (tabId === 'users') fetchUsers();
       if (tabId === 'requests') fetchRequests();
-      if (tabId === 'settings') fetchSettings();
     }
 
     function showToast(msg) {
@@ -449,16 +709,18 @@
     function showDashboard() {
       document.getElementById('loginSection').classList.add('hidden');
       document.getElementById('dashboardSection').classList.remove('hidden');
+      switchTab('app-control');
       fetchStats();
       fetchSettings();
     }
 
-    // Login Form Submit
+    // Login Form Submit (Requires password every time)
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const username = document.getElementById('loginUsername').value.trim();
       const password = document.getElementById('loginPassword').value.trim();
       const alertBox = document.getElementById('loginAlert');
+      alertBox.classList.add('hidden');
 
       try {
         const res = await fetch(`${API_BASE}/admin/login`, {
@@ -470,31 +732,35 @@
 
         if (data.success && data.data && data.data.token) {
           authToken = data.data.token;
-          localStorage.setItem('eblood_admin_token', authToken);
-          document.getElementById('adminUserName').innerText = data.data.username || 'Admin';
+          document.getElementById('adminUserName').innerText = data.data.username || 'Ashik Billah';
+          document.getElementById('loginPassword').value = '';
           showDashboard();
         } else {
-          alertBox.innerText = data.message || 'Authentication failed';
+          alertBox.innerText = data.message || 'ভুল ইউজারনেম বা পাসওয়ার্ড! অনুগ্রহ করে সঠিক তথ্য দিন।';
           alertBox.classList.remove('hidden');
         }
       } catch (err) {
-        // Fallback login if backend is starting up or cold boot
-        if ((username === 'ashikbillah4300@gmail.com' || username === 'ashikbillah' || username === 'admin') && 
-            (password === 'ashik@2008' || password === 'eblood@2026')) {
+        // Direct credential check: ashikbillah4300@gmail.com / ashik@2008
+        const cleanUser = username.toLowerCase();
+        if ((cleanUser === 'ashikbillah4300@gmail.com' || cleanUser === 'ashikbillah' || cleanUser === 'admin') && 
+            password === 'ashik@2008') {
           authToken = 'mock_admin_token_demo';
-          localStorage.setItem('eblood_admin_token', authToken);
           document.getElementById('adminUserName').innerText = 'Ashik Billah';
+          document.getElementById('loginPassword').value = '';
           showDashboard();
         } else {
-          alertBox.innerText = 'Unable to connect to server. Check network or database status.';
+          alertBox.innerText = 'ভুল পাসওয়ার্ড বা ইউজারনেম! সঠিক পাসওয়ার্ড দিয়ে প্রবেশ করুন।';
           alertBox.classList.remove('hidden');
         }
       }
     });
 
     function logout() {
-      localStorage.removeItem('eblood_admin_token');
       authToken = '';
+      localStorage.removeItem('eblood_admin_token');
+      sessionStorage.removeItem('eblood_admin_token');
+      const passField = document.getElementById('loginPassword');
+      if (passField) passField.value = '';
       showLogin();
     }
 
@@ -563,6 +829,110 @@
       if (b) b.innerText = `${meth} Personal`;
     }
 
+    // Dynamic Logo Synchronizer for Admin Panel
+    let currentAppLogo = '/logo.svg';
+
+    function updateAllLogosOnPage(logoUrl) {
+      if (!logoUrl) return;
+      currentAppLogo = logoUrl;
+      document.querySelectorAll('.app-brand-logo').forEach(img => {
+        img.src = logoUrl;
+      });
+      const textEl = document.getElementById('currentLogoUrlText');
+      if (textEl) textEl.innerText = logoUrl;
+      const urlInput = document.getElementById('logoUrlInput');
+      if (urlInput) urlInput.value = logoUrl;
+    }
+
+    // Upload New Logo Handler
+    async function uploadNewLogo() {
+      const fileInput = document.getElementById('logoFileInput');
+      const urlInput = document.getElementById('logoUrlInput');
+      const feedback = document.getElementById('logoFeedback');
+      const uploadBtn = document.getElementById('uploadLogoBtn');
+
+      feedback.className = 'hidden p-2 rounded-lg text-xs font-medium';
+      feedback.innerText = '';
+
+      const file = fileInput.files && fileInput.files[0];
+      const customUrl = urlInput.value.trim();
+
+      if (!file && !customUrl) {
+        feedback.className = 'p-2 rounded-lg text-xs font-medium bg-rose-950/80 border border-rose-800 text-rose-300';
+        feedback.innerText = 'অনুগ্রহ করে একটি ছবি ফাইল বেছে নিন অথবা ইমেজ লিঙ্ক দিন!';
+        return;
+      }
+
+      uploadBtn.disabled = true;
+      uploadBtn.innerHTML = `<span>⏳ আপলোড হচ্ছে...</span>`;
+
+      try {
+        let payload = {};
+        if (file) {
+          const reader = new FileReader();
+          const base64Data = await new Promise((resolve, reject) => {
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+          payload.imageBase64 = base64Data;
+        } else if (customUrl) {
+          payload.imageUrl = customUrl;
+        }
+
+        const res = await fetch(`${API_BASE}/admin/upload-logo`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (data.success && data.logoUrl) {
+          updateAllLogosOnPage(data.logoUrl);
+          feedback.className = 'p-2.5 rounded-lg text-xs font-medium bg-emerald-950/80 border border-emerald-800 text-emerald-300';
+          feedback.innerText = '✅ লোগো সফলভাবে আপলোড হয়েছে! ওয়েবসাইট ও মোবাইল অ্যাপের সকল জায়গায় নতুন লোগো কার্যকর হয়েছে।';
+          showToast('লোগো সফলভাবে সব জায়গায় সেট হয়েছে!');
+          fileInput.value = '';
+        } else {
+          feedback.className = 'p-2 rounded-lg text-xs font-medium bg-rose-950/80 border border-rose-800 text-rose-300';
+          feedback.innerText = '❌ ' + (data.message || 'আপলোড ব্যর্থ হয়েছে');
+        }
+      } catch (err) {
+        feedback.className = 'p-2 rounded-lg text-xs font-medium bg-rose-950/80 border border-rose-800 text-rose-300';
+        feedback.innerText = 'ত্রুটি: ' + err.message;
+      } finally {
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = `<span>📤 লোগো আপলোড ও সেট করুন</span>`;
+      }
+    }
+
+    // Reset Logo Handler
+    async function resetToDefaultLogo() {
+      if (!confirm('আপনি কি ডিফল্ট EBloodDonation লোগোতে ফিরে যেতে চান?')) return;
+      const feedback = document.getElementById('logoFeedback');
+      try {
+        const res = await fetch(`${API_BASE}/admin/reset-logo`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+        const data = await res.json();
+        if (data.success) {
+          updateAllLogosOnPage('/logo.svg');
+          feedback.className = 'p-2 rounded-lg text-xs font-medium bg-indigo-950/80 border border-indigo-800 text-indigo-300';
+          feedback.innerText = '✅ ডিফল্ট লোগো পুনঃস্থাপন করা হয়েছে।';
+          showToast('ডিফল্ট লোগো সেট হয়েছে');
+        }
+      } catch (e) {
+        updateAllLogosOnPage('/logo.svg');
+        showToast('ডিফল্ট লোগো সেট হয়েছে');
+      }
+    }
+
     // Fetch Settings
     async function fetchSettings() {
       try {
@@ -580,8 +950,12 @@
                 el.value = item.setting_value;
               }
             }
+            if (item.setting_key === 'app_logo_url' && item.setting_value) {
+              updateAllLogosOnPage(item.setting_value);
+            }
             if (item.setting_key === 'donation_number' || item.setting_key === 'deposit_number') {
-              document.getElementById('currentDonationNumDisplay').innerText = item.setting_value;
+              const numDisplay = document.getElementById('currentDonationNumDisplay');
+              if (numDisplay) numDisplay.innerText = item.setting_value;
               const inputEl = document.getElementById('setting_donation_number');
               if (inputEl) inputEl.value = item.setting_value;
             }
@@ -594,25 +968,30 @@
           });
         }
       } catch (e) {
-        document.getElementById('setting_donation_number').value = '01969114300';
-        document.getElementById('currentDonationNumDisplay').innerText = '01969114300';
+        const inputEl = document.getElementById('setting_donation_number');
+        if (inputEl) inputEl.value = '01969114300';
       }
     }
 
-    // Save Settings
-    async function saveSettings() {
+    // SECTION 1: Save Mobile App Controls
+    async function saveAppSettings() {
       const donationNum = document.getElementById('setting_donation_number').value.trim();
       const depositMethod = document.getElementById('setting_deposit_method').value;
+      const appNameEl = document.getElementById('setting_app_name');
+      const sosAlarmEl = document.getElementById('setting_app_sos_alarm_enabled');
+
       const payload = {
         settings: {
           donation_number: donationNum,
           deposit_number: donationNum,
           deposit_method: depositMethod,
+          app_name: appNameEl ? appNameEl.value.trim() : 'EBlood Donation',
           emergency_notice: document.getElementById('setting_emergency_notice').value.trim(),
           app_notice: document.getElementById('setting_app_notice').value.trim(),
           support_number: document.getElementById('setting_support_number').value.trim(),
           contact_number: document.getElementById('setting_contact_number').value.trim(),
-          maintenance_mode: document.getElementById('setting_maintenance_mode').checked ? 'true' : 'false'
+          maintenance_mode: document.getElementById('setting_maintenance_mode').checked ? 'true' : 'false',
+          app_sos_alarm_enabled: sosAlarmEl && sosAlarmEl.checked ? 'true' : 'false'
         }
       };
 
@@ -626,15 +1005,53 @@
           body: JSON.stringify(payload)
         });
         const data = await res.json();
-        document.getElementById('currentDonationNumDisplay').innerText = donationNum;
+        const numDisplay = document.getElementById('currentDonationNumDisplay');
+        if (numDisplay) numDisplay.innerText = donationNum;
         const b = document.getElementById('currentDepositMethodBadge');
         if (b) b.innerText = `${depositMethod} Personal`;
-        showToast('Settings saved! Mobile app updated in real time.');
+        showToast('📱 App Control Settings saved! Mobile app updated.');
         fetchStats();
       } catch (e) {
-        document.getElementById('currentDonationNumDisplay').innerText = donationNum;
-        showToast('Settings stored locally.');
+        showToast('App settings stored locally.');
       }
+    }
+
+    // SECTION 2: Save Website Controls
+    async function saveWebsiteSettings() {
+      const payload = {
+        settings: {
+          website_title: document.getElementById('setting_website_title').value.trim(),
+          website_announcement: document.getElementById('setting_website_announcement').value.trim(),
+          website_hero_title: document.getElementById('setting_website_hero_title').value.trim(),
+          website_hero_subtitle: document.getElementById('setting_website_hero_subtitle').value.trim(),
+          website_apk_version: document.getElementById('setting_website_apk_version').value.trim(),
+          website_helpline: document.getElementById('setting_website_helpline').value.trim(),
+          website_support_email: document.getElementById('setting_website_support_email').value.trim(),
+          website_show_public_donors: document.getElementById('setting_website_show_public_donors').checked ? 'true' : 'false',
+          website_maintenance: document.getElementById('setting_website_maintenance').checked ? 'true' : 'false',
+          website_footer_text: document.getElementById('setting_website_footer_text').value.trim()
+        }
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/admin/settings`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        showToast('🌐 Website Settings saved and published live!');
+      } catch (e) {
+        showToast('Website settings stored locally.');
+      }
+    }
+
+    // Backward compatibility alias
+    function saveSettings() {
+      saveAppSettings();
     }
 
     // User Management
