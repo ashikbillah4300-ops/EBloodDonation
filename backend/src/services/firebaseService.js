@@ -1,11 +1,32 @@
-const admin = require('firebase-admin');
+let admin = null;
+try {
+  const mod = require('firebase-admin');
+  admin = mod && mod.default ? mod.default : mod;
+} catch (e) {
+  console.warn('[FirebaseService] firebase-admin package load notice:', e.message);
+}
 
 let firebaseInitialized = false;
 
-// Initialize Firebase Admin SDK safely
+function getApps() {
+  if (!admin) return [];
+  if (Array.isArray(admin.apps)) return admin.apps;
+  if (admin.default && Array.isArray(admin.default.apps)) return admin.default.apps;
+  return [];
+}
+
+// Initialize Firebase Admin SDK safely without crashing on boot
 function initFirebaseAdmin() {
-  if (firebaseInitialized || admin.apps.length > 0) {
+  if (firebaseInitialized) return;
+
+  const existingApps = getApps();
+  if (existingApps.length > 0) {
     firebaseInitialized = true;
+    return;
+  }
+
+  if (!admin) {
+    console.log('[FirebaseService] Firebase Admin SDK is not available. Operating in simulation mode.');
     return;
   }
 
@@ -35,7 +56,12 @@ function initFirebaseAdmin() {
   }
 }
 
-initFirebaseAdmin();
+// Safe initialization
+try {
+  initFirebaseAdmin();
+} catch (err) {
+  console.warn('Firebase Admin initialization deferred:', err.message);
+}
 
 // Return compatible donor blood groups for a given recipient blood group
 function getCompatibleDonorGroups(recipientGroup) {
@@ -95,7 +121,8 @@ async function sendEmergencyBloodAlert(bloodRequest, matchingTokens) {
     return { success: true, sentCount: 0, reason: 'No valid unique FCM tokens' };
   }
 
-  if (!firebaseInitialized || admin.apps.length === 0) {
+  const apps = getApps();
+  if (!firebaseInitialized || apps.length === 0 || !admin) {
     console.log(`[FCM Mock Alert] Urgent ${bloodRequest.bloodGroup} needed at ${bloodRequest.hospitalName}. Recipient tokens: ${uniqueTokens.length}`);
     return { success: true, sentCount: uniqueTokens.length, simulated: true };
   }
@@ -152,7 +179,8 @@ async function sendEmergencyBloodAlert(bloodRequest, matchingTokens) {
  * Verify Firebase ID Token for authenticated requests
  */
 async function verifyFirebaseIdToken(idToken) {
-  if (!firebaseInitialized || admin.apps.length === 0) {
+  const apps = getApps();
+  if (!firebaseInitialized || apps.length === 0 || !admin) {
     return null;
   }
   try {
