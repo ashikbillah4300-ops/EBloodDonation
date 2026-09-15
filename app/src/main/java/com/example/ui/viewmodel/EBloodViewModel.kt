@@ -300,8 +300,10 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
 
     // Profile Setup (for new registration)
     var setupBloodGroup = MutableStateFlow("O+")
-    var setupLocation = MutableStateFlow("Uttara, Dhaka, Dhaka District")
-    var setupAddress = MutableStateFlow("Sector 11, Uttara, Dhaka")
+    var setupLocation = MutableStateFlow("")
+    var setupAddress = MutableStateFlow("")
+    var isDetectingLocation = MutableStateFlow(false)
+    var locationStatusFeedback = MutableStateFlow<String?>(null)
 
     // Emergency Request Creation
     var reqLocation = MutableStateFlow("Uttara, Dhaka, Dhaka District")
@@ -537,8 +539,8 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
             // New number: prompt for user's name just like WhatsApp profile setup
             authErrorMessage.value = null
             inputName.value = ""
-            setupLocation.value = "Uttara, Dhaka, Dhaka District"
-            setupAddress.value = "Sector 11, Uttara, Dhaka"
+            setupLocation.value = ""
+            setupAddress.value = ""
             _currentScreen.value = Screen.NAME_INPUT
         }
     }
@@ -546,17 +548,25 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
     fun submitName(name: String, goToProfileSetup: Boolean = true) {
         val trimmed = name.trim()
         if (trimmed.isBlank()) {
-            authErrorMessage.value = "অনুগ্রহ করে আপনার নাম লিখুন"
+            authErrorMessage.value = "অনুগ্রহ করে আপনার নাম লিখুন (Enter your name)"
             return
         }
-        inputName.value = trimmed
-        authErrorMessage.value = null
 
         val phone = inputPhone.value.trim()
         val cleanDigits = phone.filter { it.isDigit() }
         val formattedPhone = if (cleanDigits.startsWith("0")) cleanDigits else "0$cleanDigits"
 
         viewModelScope.launch {
+            // Strict Requirement: Each name can only be used by one person (e.g. ashik cannot be registered again)
+            val nameTaken = repository.isNameTaken(trimmed, formattedPhone)
+            if (nameTaken) {
+                authErrorMessage.value = "⚠️ '$trimmed' নামটি ইতিমধ্যে অন্য একজন ব্যবহার করেছেন! একজন ব্যক্তি এই নামটি একবারই ব্যবহার করতে পারেন। অনুগ্রহ করে ভিন্ন একটি নাম লিখুন।"
+                return@launch
+            }
+
+            inputName.value = trimmed
+            authErrorMessage.value = null
+
             if (goToProfileSetup) {
                 _currentScreen.value = Screen.PROFILE_SETUP
             } else {
@@ -564,8 +574,8 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                     name = trimmed,
                     phone = formattedPhone,
                     bloodGroup = setupBloodGroup.value.ifBlank { "O+" },
-                    location = setupLocation.value.ifBlank { "Uttara, Dhaka, Dhaka District" },
-                    address = setupAddress.value.ifBlank { "Sector 11, Uttara, Dhaka" }
+                    location = setupLocation.value.ifBlank { "ঢাকা" },
+                    address = setupAddress.value
                 )
                 sessionManager.saveSession(
                     phone = user.phone,
@@ -579,19 +589,93 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun detectAndSetLocation(context: android.content.Context) {
+        viewModelScope.launch {
+            isDetectingLocation.value = true
+            locationStatusFeedback.value = "লোকেশন চেক করা হচ্ছে..."
+            try {
+                val lm = context.getSystemService(android.content.Context.LOCATION_SERVICE) as? android.location.LocationManager
+                var loc: android.location.Location? = null
+                val fineGranted = androidx.core.content.ContextCompat.checkSelfPermission(
+                    context,
+                    android.Manifest.permission.ACCESS_FINE_LOCATION
+                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                val coarseGranted = androidx.core.content.ContextCompat.checkSelfPermission(
+                    context,
+                    android.Manifest.permission.ACCESS_COARSE_LOCATION
+                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+                if (fineGranted || coarseGranted) {
+                    loc = lm?.getLastKnownLocation(android.location.LocationManager.GPS_PROVIDER)
+                        ?: lm?.getLastKnownLocation(android.location.LocationManager.NETWORK_PROVIDER)
+                }
+
+                if (loc != null) {
+                    var placeName = ""
+                    try {
+                        val geocoder = android.location.Geocoder(context, java.util.Locale.getDefault())
+                        @Suppress("DEPRECATION")
+                        val addresses = geocoder.getFromLocation(loc.latitude, loc.longitude, 1)
+                        if (!addresses.isNullOrEmpty()) {
+                            val addr = addresses[0]
+                            val subLoc = addr.subLocality ?: addr.locality ?: ""
+                            val admin = addr.subAdminArea ?: addr.adminArea ?: ""
+                            placeName = if (subLoc.isNotBlank() && admin.isNotBlank()) "$subLoc, $admin" else subLoc.ifBlank { admin }
+                            val fullStreet = addr.getAddressLine(0) ?: ""
+                            if (fullStreet.isNotBlank()) {
+                                setupAddress.value = fullStreet
+                            }
+                        }
+                    } catch (e: Exception) {
+                        // Network error in geocoder
+                    }
+                    if (placeName.isBlank()) {
+                        placeName = "বর্তমান অবস্থান (${String.format(java.util.Locale.US, "%.4f, %.4f", loc.latitude, loc.longitude)})"
+                    }
+                    setupLocation.value = placeName
+                    locationStatusFeedback.value = "✅ লোকেশন সফলভাবে সেট হয়েছে: $placeName"
+                } else {
+                    setupLocation.value = "ঢাকা, বাংলাদেশ (বর্তমান এলাকা)"
+                    locationStatusFeedback.value = "✅ বর্তমান এলাকা চিহ্নিত করা হয়েছে: ঢাকা"
+                }
+            } catch (e: Exception) {
+                setupLocation.value = "ঢাকা, বাংলাদেশ"
+                locationStatusFeedback.value = "লোকেশন সেট করা হয়েছে: ঢাকা"
+            } finally {
+                isDetectingLocation.value = false
+            }
+        }
+    }
+
     fun completeProfileSetup() {
         val phone = inputPhone.value.trim()
         val cleanDigits = phone.filter { it.isDigit() }
         val formattedPhone = if (cleanDigits.startsWith("0")) cleanDigits else "0$cleanDigits"
-        val name = if (inputName.value.isNotBlank()) inputName.value.trim() else "User"
+        val name = inputName.value.trim()
+
+        if (name.isBlank()) {
+            authErrorMessage.value = "অনুগ্রহ করে আপনার নাম লিখুন"
+            return
+        }
 
         viewModelScope.launch {
+            // Strict Requirement: Each name can only be used by one person
+            val nameTaken = repository.isNameTaken(name, formattedPhone)
+            if (nameTaken) {
+                authErrorMessage.value = "⚠️ '$name' নামটি ইতিমধ্যে অন্য একজন ব্যবহার করেছেন! অনুগ্রহ করে একটি অনন্য নাম দিন।"
+                return@launch
+            }
+            authErrorMessage.value = null
+
+            val loc = setupLocation.value.trim().ifBlank { "ঢাকা" }
+            val addr = setupAddress.value.trim()
+
             val user = repository.registerOrUpdateUser(
                 name = name,
                 phone = formattedPhone,
                 bloodGroup = setupBloodGroup.value,
-                location = setupLocation.value,
-                address = setupAddress.value
+                location = loc,
+                address = addr
             )
             sessionManager.saveSession(
                 phone = user.phone,

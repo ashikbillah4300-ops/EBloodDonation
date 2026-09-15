@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { adminLogin, getAdminProfile } = require('../controllers/authController');
 const { getDashboardStats, getAllUsers, updateUserStatus, deleteUser } = require('../controllers/adminController');
-const { getAdminSettings, updateAdminSettings, updateSingleSetting, uploadLogo, resetLogo } = require('../controllers/settingsController');
+const { getAdminSettings, updateAdminSettings, updateSingleSetting, uploadLogo, resetLogo, uploadApk, getApkStatus } = require('../controllers/settingsController');
 const { getAllBloodRequests, updateRequestStatus } = require('../controllers/bloodRequestController');
 const { getDonations } = require('../controllers/donationController');
 const { protectAdmin, adminLoginLimiter } = require('../middleware/authMiddleware');
@@ -40,5 +40,9 @@ router.put('/settings/:key', updateSingleSetting);
 // Logo Management & Upload
 router.post('/upload-logo', uploadLogo);
 router.post('/reset-logo', resetLogo);
+
+// APK Management & Direct Upload from Admin Panel
+router.post('/upload-apk', uploadApk);
+router.get('/apk-status', getApkStatus);
 
 module.exports = router;

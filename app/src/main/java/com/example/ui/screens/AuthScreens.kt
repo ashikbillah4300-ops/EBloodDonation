@@ -782,7 +782,7 @@ fun NameInputScreen(viewModel: EBloodViewModel) {
                         },
                         placeholder = {
                             Text(
-                                text = "যেমন: আশিক বিল্লাহ",
+                                text = "Enter your name",
                                 color = Color(0xFF94A3B8),
                                 fontWeight = FontWeight.Medium,
                                 fontSize = 15.sp
@@ -873,6 +873,16 @@ fun ProfileSetupScreen(viewModel: EBloodViewModel) {
     val location by viewModel.setupLocation.collectAsStateWithLifecycle()
     val address by viewModel.setupAddress.collectAsStateWithLifecycle()
     val name by viewModel.inputName.collectAsStateWithLifecycle()
+    val authError by viewModel.authErrorMessage.collectAsStateWithLifecycle()
+    val isDetectingLocation by viewModel.isDetectingLocation.collectAsStateWithLifecycle()
+    val locationFeedback by viewModel.locationStatusFeedback.collectAsStateWithLifecycle()
+
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val locationPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
+    ) {
+        viewModel.detectAndSetLocation(context)
+    }
 
     Box(
         modifier = Modifier
@@ -904,7 +914,26 @@ fun ProfileSetupScreen(viewModel: EBloodViewModel) {
                 color = TextSecondary
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Error banner (e.g. if name is already taken)
+            if (!authError.isNullOrBlank()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFFFEBEE), RoundedCornerShape(12.dp))
+                        .border(1.dp, Color(0xFFEF5350), RoundedCornerShape(12.dp))
+                        .padding(12.dp)
+                ) {
+                    Text(
+                        text = authError ?: "",
+                        color = Color(0xFFC62828),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+                Spacer(modifier = Modifier.height(14.dp))
+            }
 
             Text(
                 text = "আপনার নাম *",
@@ -915,8 +944,11 @@ fun ProfileSetupScreen(viewModel: EBloodViewModel) {
             Spacer(modifier = Modifier.height(6.dp))
             OutlinedTextField(
                 value = name,
-                onValueChange = { viewModel.inputName.value = it },
-                placeholder = { Text("যেমন: আশিক বিল্লাহ", color = TextMuted) },
+                onValueChange = {
+                    viewModel.inputName.value = it
+                    if (!authError.isNullOrBlank()) viewModel.authErrorMessage.value = null
+                },
+                placeholder = { Text("Enter your name", color = TextMuted) },
                 leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = CrimsonPrimary) },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1010,17 +1042,72 @@ fun ProfileSetupScreen(viewModel: EBloodViewModel) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text(
-                text = "Current Area / City *",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = TextPrimary
-            )
+            // Current Area / City Header with Location Check & Set Option
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Current Area / City *",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextPrimary
+                )
+
+                // Option to check & set location
+                Surface(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .clickable(enabled = !isDetectingLocation) {
+                            locationPermissionLauncher.launch(
+                                arrayOf(
+                                    android.Manifest.permission.ACCESS_FINE_LOCATION,
+                                    android.Manifest.permission.ACCESS_COARSE_LOCATION
+                                )
+                            )
+                        }
+                        .testTag("check_and_set_location_button"),
+                    color = Color(0xFF064E3B),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.8f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (isDetectingLocation) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(13.dp),
+                                strokeWidth = 2.dp,
+                                color = Color(0xFFA7F3D0)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "চেক হচ্ছে...",
+                                fontSize = 11.5.sp,
+                                color = Color(0xFFA7F3D0),
+                                fontWeight = FontWeight.Bold
+                            )
+                        } else {
+                            Text(text = "📍", fontSize = 12.sp)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "লোকেশন চেক ও সেট",
+                                fontSize = 11.5.sp,
+                                color = Color(0xFFA7F3D0),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(6.dp))
+
             OutlinedTextField(
                 value = location,
                 onValueChange = { viewModel.setupLocation.value = it },
-                placeholder = { Text("e.g. Uttara, Dhaka, Dhaka District", color = TextMuted) },
+                placeholder = { Text("এলাকা বা শহরের নাম লিখুন (e.g. Uttara, Dhaka)", color = TextMuted) },
                 leadingIcon = { Icon(Icons.Default.LocationOn, contentDescription = null, tint = CrimsonPrimary) },
                 modifier = Modifier.fillMaxWidth().testTag("setup_location_field"),
                 shape = RoundedCornerShape(12.dp),
@@ -1034,6 +1121,45 @@ fun ProfileSetupScreen(viewModel: EBloodViewModel) {
                 )
             )
 
+            // Location Feedback (if auto-detected or updated)
+            if (!locationFeedback.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = locationFeedback ?: "",
+                    fontSize = 11.5.sp,
+                    color = Color(0xFF34D399),
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Quick area chips
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                listOf("ঢাকা", "উত্তরা", "ধানমন্ডি", "মিরপুর", "চট্টগ্রাম", "সিলেট").forEach { area ->
+                    val isCurrentArea = location == area
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(if (isCurrentArea) CrimsonPrimary else DarkSurfaceElevated)
+                            .clickable {
+                                viewModel.setupLocation.value = area
+                            }
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = area,
+                            fontSize = 11.sp,
+                            color = if (isCurrentArea) Color.White else TextSecondary,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(18.dp))
 
             Text(
@@ -1046,7 +1172,7 @@ fun ProfileSetupScreen(viewModel: EBloodViewModel) {
             OutlinedTextField(
                 value = address,
                 onValueChange = { viewModel.setupAddress.value = it },
-                placeholder = { Text("e.g. Sector 11, Road 4, House 12", color = TextMuted) },
+                placeholder = { Text("রাস্তা ও বাসার ঠিকানা (e.g. Sector 11, Road 4, House 12)", color = TextMuted) },
                 modifier = Modifier.fillMaxWidth().testTag("setup_address_field"),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(

@@ -44,6 +44,22 @@ const registerUser = async (req, res) => {
     const cleanPhone = normalizePhone(phone);
     const cleanName = (name && name.trim().length > 0) ? name.trim() : `Donor ${cleanPhone.slice(-4)}`;
 
+    // Check unique name constraint: no two accounts can share the same name
+    if (name && name.trim().length > 0) {
+      const existingUserWithName = await User.findOne({
+        where: {
+          name: { [Op.iLike]: name.trim() },
+          phone: { [Op.ne]: cleanPhone }
+        }
+      });
+      if (existingUserWithName) {
+        return res.status(400).json({
+          success: false,
+          message: `এই নামটি (${name.trim()}) ইতিমধ্যে অন্য একজন ব্যবহার করেছেন! অনুগ্রহ করে একটি অনন্য নাম দিন।`
+        });
+      }
+    }
+
     // Optional Firebase token verification if present
     if (firebaseToken) {
       const decoded = await verifyFirebaseIdToken(firebaseToken);

@@ -38,8 +38,9 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'x-user-phone', 'X-Requested-With']
 }));
 
-app.use(express.json({ limit: '20mb' }));
-app.use(express.urlencoded({ extended: true, limit: '20mb' }));
+// Support uploading APK up to 100MB directly via Admin Panel
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
 // Serve static assets (logos, uploads, icons, styles)
 app.use(express.static(path.join(__dirname, '../public')));
@@ -61,11 +62,20 @@ app.get('/admin-panel', (req, res) => {
 
 // APK Download Route
 app.get('/download/eblood.apk', (req, res) => {
-  const apkPath = path.join(__dirname, '../public/eblood.apk');
-  if (fs.existsSync(apkPath)) {
-    res.download(apkPath, 'EBloodDonation.apk');
-  } else {
-    res.send(`
+  const candidates = [
+    path.join(__dirname, '../public/eblood.apk'),
+    path.join(__dirname, '../../public/eblood.apk'),
+    path.join(__dirname, '../../.build-outputs/app-debug.apk'),
+    path.join(__dirname, '../../app/build/outputs/apk/debug/app-debug.apk')
+  ];
+
+  for (const p of candidates) {
+    if (fs.existsSync(p)) {
+      return res.download(p, 'EBloodDonation.apk');
+    }
+  }
+
+  res.send(`
       <!DOCTYPE html>
       <html lang="bn">
       <head>
@@ -90,7 +100,6 @@ app.get('/download/eblood.apk', (req, res) => {
       </body>
       </html>
     `);
-  }
 });
 
 // Routes

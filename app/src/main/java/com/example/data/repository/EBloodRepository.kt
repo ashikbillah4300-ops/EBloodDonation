@@ -27,6 +27,16 @@ class EBloodRepository(private val dao: AppDao) {
 
     suspend fun getDonorByPhone(phone: String): DonorUser? = dao.getDonorByPhone(phone)
 
+    suspend fun getDonorByName(name: String): DonorUser? = dao.getDonorByName(name)
+
+    suspend fun isNameTaken(name: String, excludePhone: String): Boolean {
+        val trimmed = name.trim()
+        if (trimmed.isBlank()) return false
+        val cleanExclude = excludePhone.trim()
+        val existing = dao.getDonorByNameExcludingPhone(trimmed, cleanExclude)
+        return existing != null
+    }
+
     suspend fun seedInitialDataIfNeeded() {
         // Remove all unauthenticated sample/mock donors from the database
         val mockPhones = listOf(

@@ -606,34 +606,6 @@ fun ProfileScreen(viewModel: EBloodViewModel) {
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Admin Panel Entry (Always requires ashik@2008 password)
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .clickable { viewModel.openAdminPanel() }
-                    .testTag("open_admin_panel_button"),
-                color = Color(0xFF1E1B4B),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF6366F1).copy(alpha = 0.5f))
-            ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = "🛡️", fontSize = 16.sp)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Admin Control Panel (এডমিন প্যানেল)",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFA5B4FC)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
             // Sign Out Button
             Surface(
                 modifier = Modifier
@@ -660,13 +632,24 @@ fun ProfileScreen(viewModel: EBloodViewModel) {
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            var adminSecretTapCount by remember { mutableStateOf(0) }
 
             Text(
                 text = "EBloodDonation v1.0.0\nConnecting donors, saving lives 🩸",
                 fontSize = 12.sp,
                 color = TextMuted,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        adminSecretTapCount++
+                        if (adminSecretTapCount >= 5) {
+                            adminSecretTapCount = 0
+                            viewModel.openAdminPanel()
+                        }
+                    }
             )
 
             Spacer(modifier = Modifier.height(30.dp))

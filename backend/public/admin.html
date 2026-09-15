@@ -461,7 +461,73 @@
             </div>
           </div>
 
-          <!-- 6. APP MAINTENANCE & SOS ALARM SWITCHES -->
+          <!-- 6. DIRECT APK UPLOAD & DISTRIBUTION -->
+          <div class="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/40 border border-indigo-500/30 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <h4 class="text-xs font-bold text-white flex items-center gap-2">
+                  <span class="text-base">📦</span>
+                  <span>অ্যান্ড্রয়েড APK আপলোড ও সেট (Direct APK Upload & Hosting)</span>
+                </h4>
+                <p class="text-[11px] text-slate-400 mt-0.5">এখানে আপনার তৈরি করা নতুন APK ফাইলটি আপলোড করলে সাথে সাথে ওয়েবসাইটের ডাউনলোড বাটনে এটি সেট হয়ে যাবে।</p>
+              </div>
+              <span id="currentApkBadge" class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                APK লাইভ আছে
+              </span>
+            </div>
+
+            <!-- APK Status Card -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 text-xs">
+              <div>
+                <p class="text-[10px] text-slate-400">বর্তমান APK সাইজ</p>
+                <p id="apkStatusSize" class="font-bold text-white font-mono mt-0.5">লোড হচ্ছে...</p>
+              </div>
+              <div>
+                <p class="text-[10px] text-slate-400">সর্বশেষ আপডেট</p>
+                <p id="apkStatusDate" class="font-bold text-slate-300 font-mono text-[11px] mt-0.5">—</p>
+              </div>
+              <div class="flex items-center sm:justify-end">
+                <a href="/download/eblood.apk" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/30 font-medium text-[11px] transition">
+                  <span>⬇️ টেস্ট ডাউনলোড</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- File Upload Input and Version -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div class="sm:col-span-2">
+                <label class="block text-xs font-semibold text-slate-300 mb-1.5">নতুন APK ফাইল নির্বাচন করুন (.apk)</label>
+                <input type="file" id="apkFileInput" accept=".apk,application/vnd.android.package-archive" class="w-full text-xs text-slate-300 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer bg-slate-800/80 rounded-xl border border-slate-700 p-1.5">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1.5">সংস্করণ ব্যাজ (Version)</label>
+                <input type="text" id="apkUploadVersionInput" class="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-mono font-bold" placeholder="v1.0 Live APK">
+              </div>
+            </div>
+
+            <!-- Upload Progress Bar (hidden by default) -->
+            <div id="apkUploadProgressContainer" class="hidden space-y-1.5">
+              <div class="flex justify-between text-[11px] text-slate-300">
+                <span id="apkUploadProgressLabel">ফাইল লোড হচ্ছে...</span>
+                <span id="apkUploadProgressPercent" class="font-bold font-mono">0%</span>
+              </div>
+              <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700">
+                <div id="apkUploadProgressBar" class="bg-gradient-to-r from-indigo-500 to-rose-500 h-full w-0 transition-all duration-300"></div>
+              </div>
+            </div>
+
+            <!-- Feedback Message -->
+            <div id="apkUploadFeedback" class="hidden"></div>
+
+            <!-- Upload Submit Button -->
+            <div class="flex items-center gap-3">
+              <button type="button" id="btnUploadApk" onclick="uploadNewApk()" class="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 text-white text-xs font-bold shadow-lg shadow-indigo-950/40 flex items-center justify-center gap-2 transition disabled:opacity-50">
+                <span>🚀 APK আপলোড ও ওয়েবসাইটে সেট করুন</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 7. APP MAINTENANCE & SOS ALARM SWITCHES -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <!-- Mobile App Maintenance Mode -->
             <div class="flex items-center justify-between p-4 rounded-2xl bg-slate-900 border border-slate-800">
@@ -696,7 +762,10 @@
         }
       }
 
-      if (tabId === 'app-control' || tabId === 'website-control') fetchSettings();
+      if (tabId === 'app-control' || tabId === 'website-control') {
+        fetchSettings();
+        fetchApkStatus();
+      }
       if (tabId === 'overview') fetchStats();
       if (tabId === 'users') fetchUsers();
       if (tabId === 'requests') fetchRequests();
@@ -720,6 +789,7 @@
       switchTab('app-control');
       fetchStats();
       fetchSettings();
+      fetchApkStatus();
     }
 
     // Login Form Submit (Requires password every time)
@@ -928,6 +998,148 @@
       } catch (e) {
         updateAllLogosOnPage('/logo.svg');
         showToast('ডিফল্ট লোগো সেট হয়েছে');
+      }
+    }
+
+    // ================= APK MANAGEMENT & UPLOAD =================
+    async function fetchApkStatus() {
+      try {
+        const res = await fetch(`${API_BASE}/admin/apk-status`, {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        const badge = document.getElementById('currentApkBadge');
+        const sizeEl = document.getElementById('apkStatusSize');
+        const dateEl = document.getElementById('apkStatusDate');
+
+        if (data.success && data.available) {
+          if (badge) {
+            badge.className = 'px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+            badge.innerText = 'APK সক্রিয় ও লাইভ';
+          }
+          if (sizeEl) sizeEl.innerText = data.size || '24 MB';
+          if (dateEl) {
+            const dt = new Date(data.updatedAt);
+            dateEl.innerText = dt.toLocaleDateString('bn-BD', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+          }
+        } else {
+          if (badge) {
+            badge.className = 'px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30';
+            badge.innerText = 'APK অনুপস্থিত';
+          }
+          if (sizeEl) sizeEl.innerText = 'পাওয়া যায়নি';
+          if (dateEl) dateEl.innerText = 'এখনো আপলোড হয়নি';
+        }
+      } catch (err) {
+        console.error('Failed to load APK status:', err);
+      }
+    }
+
+    async function uploadNewApk() {
+      const fileInput = document.getElementById('apkFileInput');
+      const versionInput = document.getElementById('apkUploadVersionInput');
+      const feedback = document.getElementById('apkUploadFeedback');
+      const progressContainer = document.getElementById('apkUploadProgressContainer');
+      const progressBar = document.getElementById('apkUploadProgressBar');
+      const progressLabel = document.getElementById('apkUploadProgressLabel');
+      const progressPercent = document.getElementById('apkUploadProgressPercent');
+      const uploadBtn = document.getElementById('btnUploadApk');
+
+      if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        alert('অনুগ্রহ করে আপনার কম্পিউটার বা ফোন থেকে একটি .apk ফাইল সিলেক্ট করুন!');
+        return;
+      }
+
+      const file = fileInput.files[0];
+      if (!file.name.toLowerCase().endsWith('.apk')) {
+        alert('শুধুমাত্র অ্যান্ড্রয়েড .apk এক্সটেনশনের ফাইল গ্রহণযোগ্য!');
+        return;
+      }
+
+      // Max size: 90MB
+      if (file.size > 90 * 1024 * 1024) {
+        alert('APK ফাইলের সাইজ ৯০ মেগাবাইট (90MB)-এর চেয়ে কম হতে হবে।');
+        return;
+      }
+
+      const version = versionInput ? versionInput.value.trim() : '';
+
+      uploadBtn.disabled = true;
+      uploadBtn.innerHTML = `<span>⏳ আপলোড হচ্ছে... অনুগ্রহ করে অপেক্ষা করুন...</span>`;
+      progressContainer.classList.remove('hidden');
+      progressBar.style.width = '15%';
+      progressPercent.innerText = '15%';
+      progressLabel.innerText = 'ফাইল মেমরিতে প্রস্তুত হচ্ছে...';
+      feedback.classList.add('hidden');
+
+      try {
+        const base64Data = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onprogress = (e) => {
+            if (e.lengthComputable) {
+              const p = Math.round((e.loaded / e.total) * 45);
+              progressBar.style.width = `${p}%`;
+              progressPercent.innerText = `${p}%`;
+              progressLabel.innerText = `ফাইল রিড হচ্ছে (${(e.loaded / (1024 * 1024)).toFixed(1)}MB / ${(e.total / (1024 * 1024)).toFixed(1)}MB)...`;
+            }
+          };
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = (err) => reject(err);
+          reader.readAsDataURL(file);
+        });
+
+        progressBar.style.width = '55%';
+        progressPercent.innerText = '55%';
+        progressLabel.innerText = 'সার্ভারে ট্রান্সফার হচ্ছে...';
+
+        const payload = {
+          apkBase64: base64Data,
+          filename: file.name,
+          version: version || 'v1.0 Live APK'
+        };
+
+        const res = await fetch(`${API_BASE}/admin/upload-apk`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        progressBar.style.width = '95%';
+        progressPercent.innerText = '95%';
+
+        const data = await res.json();
+        progressBar.style.width = '100%';
+        progressPercent.innerText = '100%';
+
+        if (data.success) {
+          feedback.className = 'p-3 rounded-xl text-xs font-medium bg-emerald-950/80 border border-emerald-800 text-emerald-300 space-y-1';
+          feedback.innerHTML = `
+            <p class="font-bold flex items-center gap-1.5"><span>✅</span> <span>${data.message}</span></p>
+            <p class="text-[11px] text-emerald-400 font-mono">ফাইল সাইজ: ${data.fileSize || ''} • ডাউনলোড পাথ: ${data.downloadUrl}</p>
+          `;
+          feedback.classList.remove('hidden');
+          showToast('নতুন APK সফলভাবে আপলোড ও হোস্ট হয়েছে!');
+          fileInput.value = '';
+          fetchApkStatus();
+          fetchSettings();
+        } else {
+          feedback.className = 'p-3 rounded-xl text-xs font-medium bg-rose-950/80 border border-rose-800 text-rose-300';
+          feedback.innerText = '❌ ' + (data.message || 'APK আপলোড ব্যর্থ হয়েছে');
+          feedback.classList.remove('hidden');
+        }
+      } catch (err) {
+        feedback.className = 'p-3 rounded-xl text-xs font-medium bg-rose-950/80 border border-rose-800 text-rose-300';
+        feedback.innerText = 'ত্রুটি: ' + err.message;
+        feedback.classList.remove('hidden');
+      } finally {
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = `<span>🚀 APK আপলোড ও ওয়েবসাইটে সেট করুন</span>`;
+        setTimeout(() => {
+          progressContainer.classList.add('hidden');
+        }, 3000);
       }
     }
 

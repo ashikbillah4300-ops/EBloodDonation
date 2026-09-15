@@ -224,6 +224,124 @@ const resetLogo = async (req, res) => {
   }
 };
 
+// POST /admin/upload-apk (Admin Protected)
+// Receives an APK file as base64 or direct binary, saves it to backend/public/eblood.apk
+const uploadApk = async (req, res) => {
+  try {
+    const { apkBase64, filename, version } = req.body;
+
+    if (!apkBase64) {
+      return res.status(400).json({ success: false, message: 'কোনো APK ফাইল ডেটা পাওয়া যায়নি।' });
+    }
+
+    // Extract base64 payload
+    let base64Data = apkBase64;
+    if (apkBase64.includes(',')) {
+      base64Data = apkBase64.split(',')[1];
+    }
+
+    const apkBuffer = Buffer.from(base64Data, 'base64');
+    if (apkBuffer.length < 1000) {
+      return res.status(400).json({ success: false, message: 'APK ফাইলটি সঠিক নয় বা এর সাইজ অত্যন্ত ছোট।' });
+    }
+
+    // Target destinations
+    const publicDir = path.join(__dirname, '../../public');
+    if (!fs.existsSync(publicDir)) {
+      fs.mkdirSync(publicDir, { recursive: true });
+    }
+
+    const targetApkPath = path.join(publicDir, 'eblood.apk');
+    fs.writeFileSync(targetApkPath, apkBuffer);
+
+    // Also copy to root public if accessible
+    try {
+      const rootPublicDir = path.join(__dirname, '../../../public');
+      if (fs.existsSync(rootPublicDir)) {
+        fs.writeFileSync(path.join(rootPublicDir, 'eblood.apk'), apkBuffer);
+      }
+    } catch (_) {}
+
+    // File size in MB
+    const sizeMb = (apkBuffer.length / (1024 * 1024)).toFixed(2);
+    const updateTime = new Date().toISOString();
+
+    // Update settings in database
+    await AppSetting.upsert({
+      setting_key: 'apk_last_uploaded_at',
+      setting_value: updateTime,
+      description: 'Timestamp of last admin APK upload'
+    });
+
+    await AppSetting.upsert({
+      setting_key: 'apk_file_size',
+      setting_value: `${sizeMb} MB`,
+      description: 'File size of current eblood.apk'
+    });
+
+    if (version && typeof version === 'string' && version.trim().length > 0) {
+      await AppSetting.upsert({
+        setting_key: 'website_apk_version',
+        setting_value: version.trim(),
+        description: 'Displayed APK version badge'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `APK সফলভাবে আপলোড ও সেট হয়েছে! (সাইজ: ${sizeMb} MB)। এখন যে কেউ ওয়েবসাইটে ক্লিক করলেই এই নতুন APK ডাউনলোড হবে।`,
+      downloadUrl: '/download/eblood.apk',
+      fileSize: `${sizeMb} MB`,
+      uploadedAt: updateTime
+    });
+  } catch (error) {
+    console.error('Error uploading APK:', error);
+    return res.status(500).json({ success: false, message: 'APK আপলোড করতে সমস্যা হয়েছে: ' + error.message });
+  }
+};
+
+// GET /admin/apk-status (Admin Protected)
+// Returns current eblood.apk availability, size, and last update
+const getApkStatus = async (req, res) => {
+  try {
+    const candidates = [
+      path.join(__dirname, '../../public/eblood.apk'),
+      path.join(__dirname, '../../../public/eblood.apk'),
+      path.join(__dirname, '../../../../.build-outputs/app-debug.apk')
+    ];
+
+    let foundPath = null;
+    for (const p of candidates) {
+      if (fs.existsSync(p)) {
+        foundPath = p;
+        break;
+      }
+    }
+
+    if (!foundPath) {
+      return res.status(200).json({
+        success: true,
+        available: false,
+        message: 'কোনো APK এখনো সেট করা নেই'
+      });
+    }
+
+    const stats = fs.statSync(foundPath);
+    const sizeMb = (stats.size / (1024 * 1024)).toFixed(2);
+
+    return res.status(200).json({
+      success: true,
+      available: true,
+      size: `${sizeMb} MB`,
+      updatedAt: stats.mtime.toISOString(),
+      downloadUrl: '/download/eblood.apk'
+    });
+  } catch (error) {
+    console.error('Error getting APK status:', error);
+    return res.status(500).json({ success: false, message: 'Failed to read APK status' });
+  }
+};
+
 module.exports = {
   seedDefaultSettingsIfEmpty,
   getPublicSettings,
@@ -231,5 +349,7 @@ module.exports = {
   updateAdminSettings,
   updateSingleSetting,
   uploadLogo,
-  resetLogo
+  resetLogo,
+  uploadApk,
+  getApkStatus
 };

@@ -23,6 +23,12 @@ interface AppDao {
     @Query("SELECT * FROM donors WHERE phone = :phone LIMIT 1")
     suspend fun getDonorByPhone(phone: String): DonorUser?
 
+    @Query("SELECT * FROM donors WHERE LOWER(TRIM(name)) = LOWER(TRIM(:name)) LIMIT 1")
+    suspend fun getDonorByName(name: String): DonorUser?
+
+    @Query("SELECT * FROM donors WHERE LOWER(TRIM(name)) = LOWER(TRIM(:name)) AND phone != :excludePhone LIMIT 1")
+    suspend fun getDonorByNameExcludingPhone(name: String, excludePhone: String): DonorUser?
+
     @Query("SELECT * FROM donors WHERE isCurrentUser = 0 AND bloodGroup = :bloodGroup AND isAvailable = 1 AND phone != :excludePhone")
     fun getAvailableDonorsByBloodGroup(bloodGroup: String, excludePhone: String): Flow<List<DonorUser>>
 
