@@ -15,17 +15,25 @@ import com.example.data.repository.EBloodRepository
 import com.example.util.ActiveAlarmState
 import com.example.util.DeviceUtils
 import com.example.util.EmergencyAlarmManager
-import com.example.util.OtpNotificationHelper
 import com.example.util.SessionManager
 import android.app.Activity
+import androidx.credentials.CredentialManager
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialException
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.FirebaseException
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.PhoneAuthCredential
 import com.google.firebase.auth.PhoneAuthOptions
 import com.google.firebase.auth.PhoneAuthProvider
+import java.security.MessageDigest
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -107,13 +115,18 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                 }
             }
 
-            // Auto-fetch fresh settings from online backend in background
-            val onlineUrl = sessionManager.getBackendUrl()
-            if (onlineUrl.isNotBlank()) {
-                try {
-                    BackendNetworkManager.fetchAndSyncSettings(onlineUrl, repository)
-                } catch (e: Exception) {
-                    // Fallback to local database silently
+            // Live continuous background auto-sync for website settings & announcements
+            viewModelScope.launch {
+                while (isActive) {
+                    val onlineUrl = backendServerUrl.value.ifBlank { sessionManager.getBackendUrl() }
+                    if (onlineUrl.isNotBlank()) {
+                        try {
+                            BackendNetworkManager.fetchAndSyncSettings(onlineUrl, repository)
+                        } catch (e: Exception) {
+                            // Fallback to local database silently
+                        }
+                    }
+                    delay(10_000) // Polling every 10 seconds for live website updates
                 }
             }
 
@@ -163,45 +176,46 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
     )
 
     val donationNumber: StateFlow<String> = appSettingsList.map { list ->
-        list.find { it.settingKey == "donation_number" }?.settingValue ?: "01969114300"
+        list.find { it.settingKey == "donation_number" || it.settingKey == "donationNumber" }?.settingValue ?: "01969114300"
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "01969114300")
 
     val depositMethod: StateFlow<String> = appSettingsList.map { list ->
-        list.find { it.settingKey == "deposit_method" }?.settingValue ?: "Wallet"
+        list.find { it.settingKey == "deposit_method" || it.settingKey == "depositMethod" }?.settingValue ?: "Wallet"
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "Wallet")
 
     val appName: StateFlow<String> = appSettingsList.map { list ->
-        list.find { it.settingKey == "app_name" }?.settingValue ?: "EBlood Donation"
+        list.find { it.settingKey == "app_name" || it.settingKey == "appName" }?.settingValue ?: "EBlood Donation"
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "EBlood Donation")
 
     val depositNumber: StateFlow<String> = appSettingsList.map { list ->
-        list.find { it.settingKey == "deposit_number" }?.settingValue
-            ?: list.find { it.settingKey == "donation_number" }?.settingValue
+        list.find { it.settingKey == "deposit_number" || it.settingKey == "depositNumber" || it.settingKey == "donation_number" || it.settingKey == "donationNumber" }?.settingValue
             ?: "01969114300"
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "01969114300")
 
     val contactNumber: StateFlow<String> = appSettingsList.map { list ->
-        list.find { it.settingKey == "contact_number" }?.settingValue ?: "01969114300"
+        list.find { it.settingKey == "contact_number" || it.settingKey == "contactNumber" }?.settingValue ?: "01969114300"
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "01969114300")
 
     val supportNumber: StateFlow<String> = appSettingsList.map { list ->
-        list.find { it.settingKey == "support_number" }?.settingValue ?: "01969114300"
+        list.find { it.settingKey == "support_number" || it.settingKey == "supportNumber" }?.settingValue ?: "01969114300"
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "01969114300")
 
     val appNotice: StateFlow<String> = appSettingsList.map { list ->
-        list.find { it.settingKey == "app_notice" }?.settingValue ?: "জরুরী রক্তের প্রয়োজনে EBloodDonation সবসময় আপনার পাশে আছে।"
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "জরুরী রক্তের প্রয়োজনে EBloodDonation সবসময় আপনার পাশে আছে।")
+        list.find { it.settingKey == "app_notice" || it.settingKey == "appNotice" || it.settingKey == "notice" }?.settingValue
+            ?: list.find { it.settingKey == "website_announcement" || it.settingKey == "websiteAnnouncement" }?.settingValue
+            ?: "Welcome to EBloodDonation. Save lives by donating blood regularly!"
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "Welcome to EBloodDonation. Save lives by donating blood regularly!")
 
     val emergencyNotice: StateFlow<String> = appSettingsList.map { list ->
-        list.find { it.settingKey == "emergency_notice" }?.settingValue ?: ""
+        list.find { it.settingKey == "emergency_notice" || it.settingKey == "emergencyNotice" }?.settingValue ?: ""
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
     val maintenanceMode: StateFlow<Boolean> = appSettingsList.map { list ->
-        (list.find { it.settingKey == "maintenance_mode" }?.settingValue ?: "false").equals("true", ignoreCase = true)
+        (list.find { it.settingKey == "maintenance_mode" || it.settingKey == "maintenanceMode" }?.settingValue ?: "false").equals("true", ignoreCase = true)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     val appLogoUrl: StateFlow<String> = appSettingsList.map { list ->
-        list.find { it.settingKey == "app_logo_url" }?.settingValue ?: ""
+        list.find { it.settingKey == "app_logo_url" || it.settingKey == "appLogoUrl" }?.settingValue ?: ""
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
     // Admin Panel Security & Management State
@@ -283,10 +297,15 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
     private val _activeBottomTab = MutableStateFlow(0) // 0: Home, 1: Inbox, 2: History, 3: Profile
     val activeBottomTab: StateFlow<Int> = _activeBottomTab.asStateFlow()
 
-    // Auth & OTP State
+    // Auth & Login State
     var authTab = MutableStateFlow(AuthTab.NEW_DONOR)
     var inputName = MutableStateFlow("")
     var inputPhone = MutableStateFlow("")
+    var inputEmail = MutableStateFlow("")
+    var inputPassword = MutableStateFlow("")
+    var isSignUpMode = MutableStateFlow(false)
+    var passwordVisible = MutableStateFlow(false)
+    var showPhoneInputDialog = MutableStateFlow(false)
     var showAlreadyRegisteredDialog = MutableStateFlow(false)
     var showOtpSentDialog = MutableStateFlow(false)
     var otpCode = MutableStateFlow("")
@@ -297,6 +316,139 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
     var generatedFallbackOtp = MutableStateFlow<String?>(null)
     var authErrorMessage = MutableStateFlow<String?>("")
     private var otpTimerJob: Job? = null
+
+    fun toggleAuthMode() {
+        isSignUpMode.value = !isSignUpMode.value
+        authErrorMessage.value = null
+    }
+
+    fun togglePasswordVisibility() {
+        passwordVisible.value = !passwordVisible.value
+    }
+
+    fun performLoginOrSignUp() {
+        authErrorMessage.value = null
+        val emailOrPhone = inputEmail.value.trim()
+        val password = inputPassword.value.trim()
+        val name = inputName.value.trim()
+        val phone = inputPhone.value.trim()
+
+        if (emailOrPhone.isBlank() && phone.isBlank()) {
+            authErrorMessage.value = "অনুগ্রহ করে ইমেইল বা মোবাইল নম্বর দিন"
+            return
+        }
+
+        if (password.isBlank()) {
+            authErrorMessage.value = "অনুগ্রহ করে পাসওয়ার্ড দিন"
+            return
+        }
+
+        if (isSignUpMode.value && name.isBlank()) {
+            authErrorMessage.value = "অনুগ্রহ করে আপনার পুরো নাম দিন"
+            return
+        }
+
+        // Determine phone number if present
+        val cleanDigitsEmail = emailOrPhone.filter { it.isDigit() }
+        val cleanDigitsPhone = phone.filter { it.isDigit() }
+
+        val finalPhone = if (cleanDigitsEmail.length >= 10) {
+            if (cleanDigitsEmail.startsWith("0")) cleanDigitsEmail else "0$cleanDigitsEmail"
+        } else if (cleanDigitsPhone.length >= 10) {
+            if (cleanDigitsPhone.startsWith("0")) cleanDigitsPhone else "0$cleanDigitsPhone"
+        } else {
+            ""
+        }
+
+        if (finalPhone.isNotBlank()) {
+            // Direct login without requiring any OTP code!
+            finishAuthFlow(finalPhone)
+        } else {
+            // Ask for phone number
+            showPhoneInputDialog.value = true
+        }
+    }
+
+    fun submitPhoneForDirectLogin() {
+        val phone = inputPhone.value.trim()
+        val cleanDigits = phone.filter { it.isDigit() }
+        if (cleanDigits.length < 10) {
+            authErrorMessage.value = "অনুগ্রহ করে সঠিক মোবাইল নম্বর দিন (১১ ডিজিট)"
+            return
+        }
+        val formattedPhone = if (cleanDigits.startsWith("0")) cleanDigits else "0$cleanDigits"
+        showPhoneInputDialog.value = false
+        authErrorMessage.value = null
+        // Direct login without requiring any OTP code!
+        finishAuthFlow(formattedPhone)
+    }
+
+    fun performGoogleSignIn(activity: Activity? = null) {
+        authErrorMessage.value = null
+        if (activity != null) {
+            viewModelScope.launch {
+                try {
+                    val credentialManager = CredentialManager.create(activity)
+                    val rawNonce = UUID.randomUUID().toString()
+                    val bytes = MessageDigest.getInstance("SHA-256").digest(rawNonce.toByteArray())
+                    val hashedNonce = bytes.fold("") { str, it -> str + "%02x".format(it) }
+
+                    val googleIdOption = GetGoogleIdOption.Builder()
+                        .setFilterByAuthorizedAccounts(false)
+                        .setServerClientId("743053486976-crsi0qt5qkrrqaocaep1bqqujtub0oj5.apps.googleusercontent.com")
+                        .setNonce(hashedNonce)
+                        .build()
+
+                    val request = GetCredentialRequest.Builder()
+                        .addCredentialOption(googleIdOption)
+                        .build()
+
+                    val result = credentialManager.getCredential(request = request, context = activity)
+                    val credential = result.credential
+                    val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                    val idToken = googleIdTokenCredential.idToken
+                    val email = googleIdTokenCredential.id
+                    val displayName = googleIdTokenCredential.displayName
+
+                    inputEmail.value = email
+                    if (!displayName.isNullOrBlank()) {
+                        inputName.value = displayName
+                    }
+
+                    val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
+                    FirebaseAuth.getInstance().signInWithCredential(firebaseCredential)
+                        .addOnCompleteListener { task ->
+                            if (task.isSuccessful) {
+                                val user = task.result?.user
+                                val phone = user?.phoneNumber ?: ""
+                                val cleanDigits = phone.filter { it.isDigit() }
+                                if (cleanDigits.length >= 10) {
+                                    val formattedPhone = if (cleanDigits.startsWith("0")) cleanDigits else "0$cleanDigits"
+                                    finishAuthFlow(formattedPhone)
+                                } else {
+                                    showPhoneInputDialog.value = true
+                                }
+                            } else {
+                                showPhoneInputDialog.value = true
+                            }
+                        }
+                } catch (e: GetCredentialException) {
+                    showPhoneInputDialog.value = true
+                } catch (e: Exception) {
+                    showPhoneInputDialog.value = true
+                }
+            }
+        } else {
+            val phone = inputPhone.value.trim()
+            val cleanDigits = phone.filter { it.isDigit() }
+            if (cleanDigits.length >= 10) {
+                val formattedPhone = if (cleanDigits.startsWith("0")) cleanDigits else "0$cleanDigits"
+                finishAuthFlow(formattedPhone)
+            } else {
+                showPhoneInputDialog.value = true
+            }
+        }
+    }
 
     // Profile Setup (for new registration)
     var setupBloodGroup = MutableStateFlow("O+")
@@ -389,19 +541,12 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
         proceedToEnterOtp()
 
         viewModelScope.launch {
-            // Generate a dynamic, unique 6-digit OTP code
-            val dynamicOtp = (100000..999999).random().toString()
-            generatedFallbackOtp.value = dynamicOtp
-
-            // Deliver notification to device notification tray
-            val ctx: android.content.Context = activity ?: getApplication<Application>()
-            OtpNotificationHelper.sendOtpNotification(ctx, dynamicOtp, formattedPhone)
+            // Real carrier SMS flow: clear any fallback generated code
+            generatedFallbackOtp.value = null
 
             val isEmulator = DeviceUtils.isEmulator()
 
-            // On real physical devices with cellular radios, attempt Firebase carrier SMS.
-            // On emulators/virtual devices, skip PhoneAuthProvider to prevent Play Integrity (-14)
-            // and unconfigured reCAPTCHA Enterprise errors.
+            // Real physical devices strictly send real carrier SMS via Firebase PhoneAuthProvider
             if (!isEmulator && activity != null) {
                 try {
                     val auth = FirebaseAuth.getInstance()
@@ -415,13 +560,26 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                                 val code = credential.smsCode
                                 if (!code.isNullOrEmpty()) {
                                     otpCode.value = code
-                                    verifyOtp()
                                 }
+                                // Instant auto-verification just like WhatsApp
+                                isVerifyingOtp.value = true
+                                auth.signInWithCredential(credential)
+                                    .addOnCompleteListener { task ->
+                                        isVerifyingOtp.value = false
+                                        if (task.isSuccessful) {
+                                            finishAuthFlow(formattedPhone)
+                                        } else {
+                                            if (!code.isNullOrEmpty()) {
+                                                verifyOtp()
+                                            }
+                                        }
+                                    }
                             }
 
                             override fun onVerificationFailed(e: FirebaseException) {
                                 isSendingSms.value = false
                                 verificationIdState.value = null
+                                authErrorMessage.value = "এসএমএস ওটিপি পাঠানো সম্ভব হয়নি: ${e.localizedMessage ?: "নেটওয়ার্ক অথবা ফায়ারবেস ত্রুটি"}"
                             }
 
                             override fun onCodeSent(
@@ -437,7 +595,14 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                 } catch (e: Exception) {
                     isSendingSms.value = false
                     verificationIdState.value = null
+                    authErrorMessage.value = "এসএমএস প্রেরণে সমস্যা: ${e.localizedMessage}"
                 }
+            } else if (isEmulator) {
+                // On virtual emulator only (where no physical SIM exists)
+                isSendingSms.value = false
+                verificationIdState.value = null
+                // Note: Only if testing on emulator without SIM card
+                authErrorMessage.value = "ভার্চুয়াল এমুলেটরে কোনো সিম কার্ড নেই। আসল ফোনে ইনস্টল করলে সরাসরি এসএমএস আসবে।"
             } else {
                 isSendingSms.value = false
                 verificationIdState.value = null
@@ -485,41 +650,40 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                         if (task.isSuccessful) {
                             finishAuthFlow(formattedPhone)
                         } else {
-                            if (code == generatedFallbackOtp.value) {
-                                finishAuthFlow(formattedPhone)
+                            val msg = task.exception?.localizedMessage
+                            authErrorMessage.value = if (msg?.contains("invalid", ignoreCase = true) == true) {
+                                "প্রদত্ত ওটিপি কোডটি সঠিক নয়। অনুগ্রহ করে আপনার এসএমএস চেক করুন।"
                             } else {
-                                authErrorMessage.value = "The OTP code you entered is invalid. Please check your SMS or notification."
+                                "ওটিপি যাচাই ব্যর্থ হয়েছে: ${msg ?: "ভুল কোড"}"
                             }
                         }
                     }
                 return
             } catch (e: Exception) {
-                if (code == generatedFallbackOtp.value) {
-                    isVerifyingOtp.value = false
-                    finishAuthFlow(formattedPhone)
-                    return
-                }
                 isVerifyingOtp.value = false
-                authErrorMessage.value = e.localizedMessage ?: "Verification error"
+                authErrorMessage.value = "যাচাইকরণে সমস্যা হয়েছে: ${e.localizedMessage}"
                 return
             }
         }
 
-        // Dynamic 6-digit OTP verification (from Notification or configured carrier test code)
-        if (code == generatedFallbackOtp.value) {
-            viewModelScope.launch {
-                delay(400)
-                isVerifyingOtp.value = false
-                finishAuthFlow(formattedPhone)
-            }
-        } else {
-            isVerifyingOtp.value = false
-            authErrorMessage.value = "Invalid OTP code. Please check your notification or SMS."
-        }
+        // If verification ID is missing or expired
+        isVerifyingOtp.value = false
+        authErrorMessage.value = "সঠিক ওটিপি কোডটি লিখুন অথবা পুনরায় এসএমএস পাঠান।"
     }
 
     private fun finishAuthFlow(formattedPhone: String) {
         viewModelScope.launch {
+            val serverUrl = backendServerUrl.value
+            val authRes = try {
+                BackendNetworkManager.loginUser(serverUrl, formattedPhone)
+            } catch (e: Exception) {
+                null
+            }
+
+            if (authRes?.token != null) {
+                sessionManager.setBackendToken(authRes.token)
+            }
+
             val existingUser = repository.getDonorByPhone(formattedPhone)
             if (existingUser != null && existingUser.name.isNotBlank()) {
                 val user = repository.signInUser(formattedPhone)
@@ -534,9 +698,26 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                     _currentScreen.value = Screen.MAIN
                     return@launch
                 }
+            } else if (authRes != null && authRes.success && !authRes.name.isNullOrBlank()) {
+                val user = repository.registerOrUpdateUser(
+                    name = authRes.name,
+                    phone = formattedPhone,
+                    bloodGroup = (authRes.bloodGroup ?: "O+").ifBlank { "O+" },
+                    location = authRes.location ?: "",
+                    address = authRes.address ?: ""
+                )
+                sessionManager.saveSession(
+                    phone = user.phone,
+                    name = user.name,
+                    bloodGroup = user.bloodGroup,
+                    location = user.location,
+                    address = user.address
+                )
+                _currentScreen.value = Screen.MAIN
+                return@launch
             }
 
-            // New number: prompt for user's name just like WhatsApp profile setup
+            // New number: prompt for user's name
             authErrorMessage.value = null
             inputName.value = ""
             setupLocation.value = ""
@@ -684,6 +865,25 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                 location = user.location,
                 address = user.address
             )
+
+            // Register/sync user on website REST API server
+            val serverUrl = backendServerUrl.value
+            try {
+                val authRes = BackendNetworkManager.registerUser(
+                    rawUrl = serverUrl,
+                    name = name,
+                    phone = formattedPhone,
+                    bloodGroup = setupBloodGroup.value,
+                    location = loc,
+                    address = addr
+                )
+                if (authRes.token != null) {
+                    sessionManager.setBackendToken(authRes.token)
+                }
+            } catch (e: Exception) {
+                // Ignore network errors during background sync
+            }
+
             _currentScreen.value = Screen.MAIN
         }
     }

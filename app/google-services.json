@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "743053486976",
+    "project_id": "eblooddonation-6af67",
+    "storage_bucket": "eblooddonation-6af67.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:743053486976:android:6af053c1b43159189f2f65",
+        "android_client_info": {
+          "package_name": "com.EBloodDonation"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "743053486976-hr4l8hfdq7lbmkkhm1oqneh72pdaan4o.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.EBloodDonation",
+            "certificate_hash": "18cefb241462aeda8a255a27a524744c10ac7643"
+          }
+        },
+        {
+          "client_id": "743053486976-pc91qga5dg1u4hq5k1pd281g6j738u0l.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.EBloodDonation",
+            "certificate_hash": "00a478a3daace7cfc02d50c05cd883117ee9fc3d"
+          }
+        },
+        {
+          "client_id": "743053486976-crsi0qt5qkrrqaocaep1bqqujtub0oj5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAeQlLh-c95HWDsOdITwL93iz1_DnARJvs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "743053486976-crsi0qt5qkrrqaocaep1bqqujtub0oj5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

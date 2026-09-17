@@ -19,7 +19,11 @@ class EBloodFirebaseMessagingService : FirebaseMessagingService() {
         val backendUrl = sessionManager.getBackendUrl()
 
         CoroutineScope(Dispatchers.IO).launch {
-            BackendNetworkManager.registerFcmToken(backendUrl, token, userPhone)
+            try {
+                BackendNetworkManager.registerFcmToken(backendUrl, token, userPhone)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to register FCM token with server: ${e.message}")
+            }
         }
     }
 

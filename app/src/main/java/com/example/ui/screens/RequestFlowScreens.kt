@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -93,6 +94,7 @@ fun RequestStep1Screen(viewModel: EBloodViewModel) {
         modifier = Modifier
             .fillMaxSize()
             .background(DarkBackground)
+            .statusBarsPadding()
             .padding(16.dp)
             .testTag("request_step1_screen")
     ) {
@@ -395,6 +397,7 @@ fun RequestStep2Screen(viewModel: EBloodViewModel) {
         modifier = Modifier
             .fillMaxSize()
             .background(DarkBackground)
+            .statusBarsPadding()
             .padding(16.dp)
             .testTag("request_step2_screen")
     ) {
@@ -584,6 +587,7 @@ fun RequestStep3Screen(viewModel: EBloodViewModel) {
         modifier = Modifier
             .fillMaxSize()
             .background(DarkBackground)
+            .statusBarsPadding()
             .testTag("request_step3_screen")
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -992,6 +996,7 @@ fun RequestSentSuccessScreen(viewModel: EBloodViewModel) {
         modifier = Modifier
             .fillMaxSize()
             .background(DarkBackground)
+            .statusBarsPadding()
             .padding(20.dp)
             .testTag("request_sent_success_screen")
     ) {

@@ -31,6 +31,14 @@
             </intent-filter>
         </activity>
 
+        <!-- Disable automatic FCM background init on startup to prevent hard failure exceptions in emulators/offline devices -->
+        <meta-data
+            android:name="firebase_messaging_auto_init_enabled"
+            android:value="false" />
+        <meta-data
+            android:name="firebase_analytics_collection_deactivated"
+            android:value="true" />
+
         <!-- Firebase Cloud Messaging Receiver Service -->
         <service
             android:name=".util.EBloodFirebaseMessagingService"

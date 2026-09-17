@@ -88,12 +88,12 @@
 
         <!-- CTA Buttons -->
         <div id="download" class="pt-4 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
-          <button onclick="triggerDownload()" class="pulse-btn w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 hover:from-rose-500 hover:to-red-500 text-white rounded-2xl font-bold text-base shadow-xl shadow-rose-900/40 flex items-center justify-center gap-3 transition transform hover:-translate-y-0.5 active:translate-y-0">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <a href="/download/eblood.apk" download="EBloodDonation.apk" id="mainDownloadBtn" onclick="onDownloadClick(event)" class="pulse-btn w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-rose-600 via-red-600 to-rose-700 hover:from-rose-500 hover:to-red-500 text-white rounded-2xl font-bold text-base shadow-xl shadow-rose-900/40 flex items-center justify-center gap-3 transition transform hover:-translate-y-0.5 active:translate-y-0">
+            <svg id="downloadBtnIcon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
             </svg>
             <span id="web-download-btn-text">Download EBlood APK (Free)</span>
-          </button>
+          </a>
         </div>
 
         <!-- Verification / Trust Badges -->
@@ -245,8 +245,24 @@
 
   <!-- Download & Dynamic Settings Script -->
   <script>
+    function onDownloadClick(event) {
+      const btnText = document.getElementById('web-download-btn-text');
+      if (btnText) {
+        const originalText = btnText.innerText;
+        btnText.innerText = 'ডাউনলোড শুরু হচ্ছে...';
+        setTimeout(() => {
+          btnText.innerText = originalText;
+        }, 5000);
+      }
+    }
+
     function triggerDownload() {
-      window.location.href = '/download/eblood.apk';
+      const link = document.createElement('a');
+      link.href = '/download/eblood.apk';
+      link.download = 'EBloodDonation.apk';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
 
     // Dynamic website settings synchronization

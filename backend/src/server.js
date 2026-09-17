@@ -69,9 +69,55 @@ app.get('/download/eblood.apk', (req, res) => {
     path.join(__dirname, '../../app/build/outputs/apk/debug/app-debug.apk')
   ];
 
+  let apkPath = null;
   for (const p of candidates) {
     if (fs.existsSync(p)) {
-      return res.download(p, 'EBloodDonation.apk');
+      apkPath = p;
+      break;
+    }
+  }
+
+  if (apkPath) {
+    try {
+      const stat = fs.statSync(apkPath);
+      const fileSize = stat.size;
+      const range = req.headers.range;
+
+      const filename = 'EBloodDonation.apk';
+
+      // Standard headers for high-reliability APK downloads
+      res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Accept-Ranges', 'bytes');
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+
+      // Handle HTTP Range requests (crucial for Chrome / Android Download Manager resume)
+      if (range) {
+        const parts = range.replace(/bytes=/, '').split('-');
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+
+        if (start >= fileSize || end >= fileSize) {
+          res.setHeader('Content-Range', `bytes */${fileSize}`);
+          return res.status(416).send('Requested range not satisfiable');
+        }
+
+        const chunksize = (end - start) + 1;
+        const fileStream = fs.createReadStream(apkPath, { start, end });
+
+        res.status(206);
+        res.setHeader('Content-Range', `bytes ${start}-${end}/${fileSize}`);
+        res.setHeader('Content-Length', chunksize);
+        return fileStream.pipe(res);
+      } else {
+        res.setHeader('Content-Length', fileSize);
+        const fileStream = fs.createReadStream(apkPath);
+        return fileStream.pipe(res);
+      }
+    } catch (err) {
+      console.error('Error streaming APK file:', err);
+      return res.download(apkPath, 'EBloodDonation.apk');
     }
   }
 

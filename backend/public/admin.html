@@ -341,60 +341,21 @@
         </div>
 
         <form id="appControlForm" class="space-y-6 max-w-3xl">
-          <!-- 1. LOGO UPLOAD & BRANDING -->
+          <!-- 1. APP BRANDING & NAME -->
           <div class="p-5 rounded-2xl bg-gradient-to-br from-indigo-950/40 via-slate-900 to-slate-900 border border-indigo-700/60 space-y-4">
             <div class="flex items-center justify-between">
               <div class="flex items-center space-x-2.5">
-                <span class="text-2xl">🎨</span>
+                <span class="text-2xl">📱</span>
                 <div>
-                  <h3 class="text-sm font-black text-indigo-300">App Logo & Branding / অ্যাপের লোগো ও নাম</h3>
-                  <p class="text-[11px] text-slate-300">এখানে লোগো পরিবর্তন করলে অ্যান্ড্রয়েড অ্যাপের স্প্ল্যাশ স্ক্রিন ও হেডার স্বয়ংক্রিয়ভাবে আপডেট হবে।</p>
+                  <h3 class="text-sm font-black text-indigo-300">অ্যান্ড্রয়েড অ্যাপের নাম (App Display Name)</h3>
+                  <p class="text-[11px] text-slate-300">মোবাইল অ্যাপের প্রদর্শিত নাম পরিচালনা করুন</p>
                 </div>
               </div>
               <span class="px-2.5 py-0.5 text-[10px] font-bold bg-indigo-900/60 text-indigo-300 rounded-full border border-indigo-700/50">Auto Sync</span>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center pt-1">
-              <!-- Current Logo Preview -->
-              <div class="sm:col-span-4 flex flex-col items-center justify-center p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl text-center">
-                <p class="text-[10px] font-semibold text-slate-400 mb-1.5">বর্তমান সক্রিয় লোগো</p>
-                <div class="w-20 h-20 rounded-xl bg-white p-2.5 flex items-center justify-center shadow-lg border border-slate-700">
-                  <img id="currentLogoPreview" src="/logo.svg" alt="Active Logo" class="app-brand-logo w-full h-full object-contain">
-                </div>
-                <p id="currentLogoUrlText" class="text-[9px] text-slate-500 font-mono mt-1.5 max-w-[140px] truncate">/logo.svg</p>
-              </div>
-
-              <!-- Upload Controls -->
-              <div class="sm:col-span-8 space-y-2.5">
-                <div>
-                  <label class="block text-xs font-semibold text-slate-200 mb-1">
-                    📁 নতুন লোগো ফাইল আপলোড করুন (PNG, JPG, SVG, WebP)
-                  </label>
-                  <input type="file" id="logoFileInput" accept="image/png, image/jpeg, image/svg+xml, image/webp" class="block w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-rose-600 file:text-white hover:file:bg-rose-500 file:cursor-pointer bg-slate-800/90 border border-slate-700 rounded-xl p-1">
-                  <p class="text-[10px] text-slate-400 mt-1">সুপারিশ: স্বচ্ছ ব্যাকগ্রাউন্ড (Transparent PNG/SVG) বা স্কয়ার সাইজ</p>
-                </div>
-
-                <div>
-                  <label class="block text-xs font-semibold text-slate-300 mb-1">অথবা লোগোর ইমেজ লিঙ্ক দিন (Direct Image URL)</label>
-                  <input type="url" id="logoUrlInput" class="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs font-mono placeholder-slate-500" placeholder="https://domain.com/logo.png">
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="flex items-center gap-2 pt-1">
-                  <button type="button" onclick="uploadNewLogo()" id="uploadLogoBtn" class="flex-1 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-md shadow-rose-900/30 flex items-center justify-center space-x-1.5 transition">
-                    <span>📤 লোগো আপলোড ও সেট করুন</span>
-                  </button>
-                  <button type="button" onclick="resetToDefaultLogo()" id="resetLogoBtn" title="Reset to original default logo" class="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition">
-                    <span>🔄 ডিফল্ট</span>
-                  </button>
-                </div>
-
-                <div id="logoFeedback" class="hidden p-2 rounded-lg text-xs font-medium"></div>
-              </div>
-            </div>
-
             <!-- App Name in App Control -->
-            <div class="pt-2 border-t border-slate-800/80">
+            <div>
               <label class="block text-xs font-semibold text-slate-300 mb-1">অ্যান্ড্রয়েড অ্যাপের প্রদর্শিত নাম (App Display Name)</label>
               <input type="text" id="setting_app_name" class="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-bold focus:outline-none focus:border-indigo-500" placeholder="EBlood Donation">
             </div>

@@ -2,6 +2,14 @@ package com.example.ui.screens
 
 import android.app.Activity
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -37,10 +45,14 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
@@ -49,6 +61,9 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -59,9 +74,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -92,8 +109,51 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(viewModel: EBloodViewModel? = null) {
-    val appLogoUrl = viewModel?.appLogoUrl?.collectAsStateWithLifecycle()?.value
-    val backendUrl = viewModel?.backendServerUrl?.collectAsStateWithLifecycle()?.value
+    val infiniteTransition = rememberInfiniteTransition(label = "splash_loading")
+
+    // Pulsing Scale
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.93f,
+        targetValue = 1.07f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale"
+    )
+
+    // Pulsing Alpha
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.65f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "alpha"
+    )
+
+    // Shimmering Gradient Shift
+    val shimmerOffset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1000f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1800, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shimmer"
+    )
+
+    val gradientBrush = Brush.linearGradient(
+        colors = listOf(
+            Color(0xFF2563EB),
+            Color(0xFF60A5FA),
+            Color(0xFF93C5FD),
+            Color(0xFF2563EB)
+        ),
+        start = Offset(shimmerOffset, shimmerOffset),
+        end = Offset(shimmerOffset + 400f, shimmerOffset + 400f)
+    )
 
     Box(
         modifier = Modifier
@@ -102,267 +162,397 @@ fun SplashScreen(viewModel: EBloodViewModel? = null) {
             .testTag("splash_screen"),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            // Circular drop container matching screenshot style
-            Box(
-                modifier = Modifier
-                    .size(110.dp)
-                    .background(Color.White, CircleShape)
-                    .border(2.dp, CrimsonPrimary.copy(alpha = 0.2f), CircleShape)
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                AppLogo(
-                    logoUrl = appLogoUrl,
-                    backendBaseUrl = backendUrl,
-                    contentDescription = "EBlood Logo",
-                    modifier = Modifier.size(68.dp)
-                )
-            }
+        // ONLY the app name "EBloodDonation" with glowing loading animation
+        Text(
+            text = "EBloodDonation",
+            fontSize = 36.sp,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 1.sp,
+            style = TextStyle(
+                brush = gradientBrush
+            ),
+            modifier = Modifier
+                .scale(scale)
+                .alpha(alpha)
+        )
+    }
+}
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = "EBloodDonation",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                color = CrimsonPrimary
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "জরুরি রক্তের প্রয়োজনে রক্তদাতাদের সাথে দ্রুত যোগাযোগ",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1E293B),
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // 3 dots
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(modifier = Modifier.size(8.dp).background(CrimsonPrimary, CircleShape))
-                Box(modifier = Modifier.size(8.dp).background(CrimsonPrimary.copy(alpha = 0.6f), CircleShape))
-                Box(modifier = Modifier.size(8.dp).background(CrimsonPrimary.copy(alpha = 0.3f), CircleShape))
-            }
-        }
+@Composable
+fun GoogleGLogo(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "G",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Black,
+            color = Color(0xFF4285F4)
+        )
     }
 }
 
 @Composable
 fun AuthScreen(viewModel: EBloodViewModel) {
-    val currentAuthTab by viewModel.authTab.collectAsStateWithLifecycle()
-    val name by viewModel.inputName.collectAsStateWithLifecycle()
-    val phone by viewModel.inputPhone.collectAsStateWithLifecycle()
-    val showAlreadyRegistered by viewModel.showAlreadyRegisteredDialog.collectAsStateWithLifecycle()
-    val showOtpSent by viewModel.showOtpSentDialog.collectAsStateWithLifecycle()
-    val isSendingSms by viewModel.isSendingSms.collectAsStateWithLifecycle()
-    val authError by viewModel.authErrorMessage.collectAsStateWithLifecycle()
-    val appLogoUrl by viewModel.appLogoUrl.collectAsStateWithLifecycle()
-    val backendUrl by viewModel.backendServerUrl.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val email by viewModel.inputEmail.collectAsStateWithLifecycle()
+    val password by viewModel.inputPassword.collectAsStateWithLifecycle()
+    val phone by viewModel.inputPhone.collectAsStateWithLifecycle()
+    val name by viewModel.inputName.collectAsStateWithLifecycle()
+    val isSignUp by viewModel.isSignUpMode.collectAsStateWithLifecycle()
+    val passwordVisible by viewModel.passwordVisible.collectAsStateWithLifecycle()
+    val showPhoneDialog by viewModel.showPhoneInputDialog.collectAsStateWithLifecycle()
+    val authError by viewModel.authErrorMessage.collectAsStateWithLifecycle()
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(DarkBackground)
+            .background(Color.White)
             .testTag("auth_screen")
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 20.dp),
+                .padding(horizontal = 28.dp, vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(36.dp))
 
-            // 1. Soft Circular Avatar with Official EBloodDonation Logo
-            Box(
-                modifier = Modifier
-                    .size(108.dp)
-                    .background(Color.White, CircleShape)
-                    .border(2.dp, Color(0xFFF3DDE0), CircleShape)
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                AppLogo(
-                    logoUrl = appLogoUrl,
-                    backendBaseUrl = backendUrl,
-                    contentDescription = "EBlood Logo",
-                    modifier = Modifier.size(66.dp)
+            // 1. Header Title & Subtitle (Exact match to screenshot)
+            Text(
+                text = if (isSignUp) "Create Account" else "Welcome Back",
+                fontSize = 30.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF111827)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = if (isSignUp) "Sign up to get started" else "Sign in to your account",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF6B7280)
+            )
+
+            Spacer(modifier = Modifier.height(36.dp))
+
+            // 2. Sign Up Name Field (Visible when in Sign Up mode)
+            if (isSignUp) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "Full Name",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF374151)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { viewModel.inputName.value = it },
+                        placeholder = {
+                            Text(text = "John Doe", color = Color(0xFF9CA3AF), fontSize = 15.sp)
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Name Icon",
+                                tint = Color(0xFF9CA3AF),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        },
+                        textStyle = TextStyle(fontSize = 15.sp, color = Color(0xFF111827), fontWeight = FontWeight.Medium),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            focusedBorderColor = Color(0xFF2563EB),
+                            unfocusedBorderColor = Color(0xFFD1D5DB)
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(18.dp))
+                }
+            }
+
+            // 3. Email Address Field (Exact match to screenshot)
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Email Address",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF374151)
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { viewModel.inputEmail.value = it },
+                    placeholder = {
+                        Text(text = "your@email.com", color = Color(0xFF9CA3AF), fontSize = 15.sp)
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.Email,
+                            contentDescription = "Email Icon",
+                            tint = Color(0xFF9CA3AF),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    },
+                    textStyle = TextStyle(fontSize = 15.sp, color = Color(0xFF111827), fontWeight = FontWeight.Medium),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White,
+                        focusedBorderColor = Color(0xFF2563EB),
+                        unfocusedBorderColor = Color(0xFFD1D5DB)
+                    )
                 )
             }
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // 2. Title: "EBloodDonation" in Bold Red
-            Text(
-                text = "EBloodDonation",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFFD32F2F)
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // 4. Elevated Card Container (Exact match to screenshot)
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(22.dp),
-                color = Color(0xFFFFF6F7),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF3DDE0)),
-                shadowElevation = 0.dp
-            ) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 22.dp),
-                    horizontalAlignment = Alignment.Start
-                ) {
-                    // Card Title
-                    Text(
-                        text = "আপনার ফোন নম্বর দিন",
-                        fontSize = 19.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF111827)
-                    )
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    // Card Subtitle
-                    Text(
-                        text = "নম্বর যাচাইয়ের জন্য একটি ওটিপি (OTP) কোড পাঠানো হবে",
-                        fontSize = 13.5.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF4B5563)
-                    )
-
-                    Spacer(modifier = Modifier.height(18.dp))
-
-                    // Red Outlined Phone Input Field with Phone Icon
-                    OutlinedTextField(
-                        value = phone,
-                        onValueChange = { viewModel.inputPhone.value = it },
-                        label = {
-                            Text(
-                                text = "মোবাইল নম্বর (+880)",
-                                color = Color(0xFFD32F2F),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp
-                            )
-                        },
-                        leadingIcon = {
+            // 4. Password Field (Exact match to screenshot)
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Password",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF374151)
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { viewModel.inputPassword.value = it },
+                    placeholder = {
+                        Text(text = "••••••••", color = Color(0xFF9CA3AF), fontSize = 15.sp)
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = "Lock Icon",
+                            tint = Color(0xFF9CA3AF),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    },
+                    trailingIcon = {
+                        IconButton(onClick = { viewModel.togglePasswordVisibility() }) {
                             Icon(
-                                imageVector = Icons.Default.Phone,
-                                contentDescription = "Phone Icon",
-                                tint = Color(0xFFD32F2F),
+                                imageVector = if (passwordVisible) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff,
+                                contentDescription = "Toggle Password Visibility",
+                                tint = Color(0xFF9CA3AF),
                                 modifier = Modifier.size(20.dp)
                             )
-                        },
-                        placeholder = {
-                            Text(
-                                text = "01XXXXXXXXX",
-                                color = Color(0xFF64748B),
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 15.sp
-                            )
-                        },
-                        textStyle = androidx.compose.ui.text.TextStyle(
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF111827)
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("phone_input_field"),
-                        shape = RoundedCornerShape(16.dp),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = DarkSurfaceCard,
-                            unfocusedContainerColor = DarkSurfaceCard,
-                            focusedBorderColor = CrimsonPrimary,
-                            unfocusedBorderColor = CrimsonPrimary,
-                            focusedTextColor = TextPrimary,
-                            unfocusedTextColor = TextPrimary
-                        )
+                        }
+                    },
+                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    textStyle = TextStyle(fontSize = 15.sp, color = Color(0xFF111827), fontWeight = FontWeight.Medium),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White,
+                        focusedBorderColor = Color(0xFF2563EB),
+                        unfocusedBorderColor = Color(0xFFD1D5DB)
                     )
+                )
+            }
 
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    if (!authError.isNullOrBlank()) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(Color(0xFFFFEBEE), RoundedCornerShape(10.dp))
-                                .border(1.dp, Color(0xFFEF5350), RoundedCornerShape(10.dp))
-                                .padding(10.dp)
-                        ) {
-                            Text(
-                                text = authError ?: "",
-                                color = Color(0xFFC62828),
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
+            // 5. Forgot Password Link (Right aligned, visible in Sign In mode)
+            if (!isSignUp) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.CenterEnd
+                ) {
+                    Text(
+                        text = "Forgot password?",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF2563EB),
+                        modifier = Modifier.clickable {
+                            viewModel.authErrorMessage.value = "পাসওয়ার্ড রিসেটের লিংক আপনার ইমেইলে পাঠানো হবে"
                         }
-                        Spacer(modifier = Modifier.height(14.dp))
-                    }
-
-                    // Solid Red Action Button: "ওটিপি কোড পাঠান"
-                    Button(
-                        onClick = {
-                            val act = context as? Activity
-                            viewModel.onSendOtpClicked(activity = act)
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp)
-                            .testTag("send_otp_button"),
-                        shape = RoundedCornerShape(16.dp),
-                        enabled = !isSendingSms && phone.isNotBlank(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFD32F2F),
-                            disabledContainerColor = Color(0xFFD32F2F).copy(alpha = 0.5f)
-                        )
-                    ) {
-                        if (isSendingSms) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                color = Color.White,
-                                strokeWidth = 2.dp
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(
-                                text = "ওটিপি পাঠানো হচ্ছে...",
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        } else {
-                            Text(
-                                text = "ওটিপি কোড পাঠান",
-                                fontSize = 16.5.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
-                    }
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text(
-                text = "প্রতিটি মোবাইল নম্বর একটি নির্দিষ্ট একাউন্টের সাথে সুরক্ষিত থাকে\nএকই নম্বর দিয়ে অন্য কেউ একাউন্ট খুলতে পারবে না",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color(0xFF6B7280),
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
+            if (!authError.isNullOrBlank()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFFEF2F2), RoundedCornerShape(10.dp))
+                        .border(1.dp, Color(0xFFFCA5A5), RoundedCornerShape(10.dp))
+                        .padding(12.dp)
+                ) {
+                    Text(
+                        text = authError ?: "",
+                        color = Color(0xFFDC2626),
+                        fontSize = 13.5.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                Spacer(modifier = Modifier.height(18.dp))
+            }
+
+            // 6. Primary Action Button: "Sign In" / "Sign Up" (Exact match to screenshot)
+            Button(
+                onClick = { viewModel.performLoginOrSignUp() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF2563EB)
+                )
+            ) {
+                Text(
+                    text = if (isSignUp) "Sign Up" else "Sign In",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // 7. Divider: "Or continue with" (Exact match to screenshot)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                HorizontalDivider(
+                    modifier = Modifier.weight(1f),
+                    thickness = 1.dp,
+                    color = Color(0xFFE5E7EB)
+                )
+                Text(
+                    text = "Or continue with",
+                    fontSize = 13.5.sp,
+                    color = Color(0xFF6B7280),
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                )
+                HorizontalDivider(
+                    modifier = Modifier.weight(1f),
+                    thickness = 1.dp,
+                    color = Color(0xFFE5E7EB)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // 8. Google Sign-In Button (Exact match to screenshot)
+            OutlinedButton(
+                onClick = { viewModel.performGoogleSignIn(activity = context as? Activity) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.dp, Color(0xFFD1D5DB)),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = Color.White
+                )
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    GoogleGLogo(modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Google",
+                        fontSize = 15.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1F2937)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // 9. Bottom Sign In / Sign Up Link (Exact match to screenshot)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = if (isSignUp) "Already have an account? " else "Don't have an account? ",
+                    fontSize = 14.sp,
+                    color = Color(0xFF4B5563)
+                )
+                Text(
+                    text = if (isSignUp) "Sign in" else "Sign up",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF2563EB),
+                    modifier = Modifier.clickable { viewModel.toggleAuthMode() }
+                )
+            }
+        }
+
+        // 10. Phone Number Input Modal (When phone is required for direct login without OTP)
+        if (showPhoneDialog) {
+            AlertDialog(
+                onDismissRequest = { viewModel.showPhoneInputDialog.value = false },
+                title = {
+                    Text(
+                        text = "আপনার মোবাইল নম্বর দিন",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF111827)
+                    )
+                },
+                text = {
+                    Column {
+                        Text(
+                            text = "লগইন সম্পূর্ণ করতে আপনার ১১ ডিজিটের মোবাইল নম্বরটি লিখুন। কোনো ওটিপি কোড লাগবে না।",
+                            fontSize = 13.5.sp,
+                            color = Color(0xFF4B5563)
+                        )
+                        Spacer(modifier = Modifier.height(14.dp))
+                        OutlinedTextField(
+                            value = phone,
+                            onValueChange = { viewModel.inputPhone.value = it },
+                            placeholder = { Text("01XXXXXXXXX") },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Phone,
+                                    contentDescription = null,
+                                    tint = Color(0xFF2563EB)
+                                )
+                            },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = { viewModel.submitPhoneForDirectLogin() },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("লগইন করুন →", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { viewModel.showPhoneInputDialog.value = false }) {
+                        Text("বাতিল", color = Color(0xFF6B7280))
+                    }
+                },
+                containerColor = Color.White,
+                shape = RoundedCornerShape(16.dp)
             )
         }
     }
@@ -447,7 +637,7 @@ fun OtpVerificationScreen(viewModel: EBloodViewModel) {
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "$displayPhone নম্বরে পাঠানো ৬ ডিজিটের কোডটি লিখুন",
+                text = "$displayPhone নম্বরে এসএমএস (SMS)-এর মাধ্যমে পাঠানো ৬ ডিজিটের ওটিপি কোডটি লিখুন",
                 fontSize = 13.5.sp,
                 color = TextSecondary,
                 textAlign = TextAlign.Center
@@ -478,48 +668,49 @@ fun OtpVerificationScreen(viewModel: EBloodViewModel) {
 
             val focusRequester = remember { FocusRequester() }
             val context = LocalContext.current
-            val fallbackOtp by viewModel.generatedFallbackOtp.collectAsStateWithLifecycle()
-            val activeHintCode = fallbackOtp
+            val isSendingSms by viewModel.isSendingSms.collectAsStateWithLifecycle()
 
             LaunchedEffect(Unit) {
                 focusRequester.requestFocus()
             }
 
-            if (!activeHintCode.isNullOrBlank()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFFDCFCE7), RoundedCornerShape(10.dp))
-                        .border(1.dp, SuccessGreen.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
-                        .clickable {
-                            viewModel.otpCode.value = activeHintCode
-                            viewModel.verifyOtp()
-                        }
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                    contentAlignment = Alignment.Center
+            // WhatsApp Style Auto-Detect Status
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+                    .background(Color(0xFFF0FDF4), RoundedCornerShape(12.dp))
+                    .border(1.dp, Color(0xFFBBF7D0), RoundedCornerShape(12.dp))
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "🔑 আপনার ভেরিফিকেশন কোড: ",
-                            color = Color(0xFF166534),
-                            fontSize = 13.sp
+                    if (isSendingSms || isVerifying) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            color = Color(0xFF16A34A),
+                            strokeWidth = 2.dp
                         )
-                        Text(
-                            text = activeHintCode,
-                            color = Color(0xFF15803D),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "(বসাতে ট্যাপ করুন)",
-                            color = Color(0xFFD97706),
-                            fontSize = 11.sp
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = Color(0xFF16A34A),
+                            modifier = Modifier.size(16.dp)
                         )
                     }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = if (isVerifying) "ওটিপি স্বয়ংক্রিয়ভাবে যাচাই করা হচ্ছে..." else "এসএমএস আসলে কোডটি নিজে থেকেই বসে যাবে...",
+                        fontSize = 12.sp,
+                        color = Color(0xFF15803D),
+                        fontWeight = FontWeight.Medium
+                    )
                 }
-                Spacer(modifier = Modifier.height(14.dp))
             }
+            Spacer(modifier = Modifier.height(14.dp))
 
             // 6 OTP Digit Boxes with Direct Keyboard Input Support
             Box(
@@ -694,7 +885,7 @@ fun NameInputScreen(viewModel: EBloodViewModel) {
                 text = "EBloodDonation",
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFFD32F2F)
+                color = CrimsonPrimary
             )
 
             Spacer(modifier = Modifier.height(28.dp))
@@ -728,7 +919,7 @@ fun NameInputScreen(viewModel: EBloodViewModel) {
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        text = "ওটিপি সফলভাবে যাচাই হয়েছে। রক্তদান বা জরুরি প্রয়োজনে যোগাযোগের জন্য আপনার নাম লিখুন।",
+                        text = "রক্তদান বা জরুরি প্রয়োজনে যোগাযোগের জন্য আপনার নাম লিখুন।",
                         fontSize = 13.5.sp,
                         fontWeight = FontWeight.Medium,
                         color = Color(0xFF4B5563),
@@ -741,13 +932,13 @@ fun NameInputScreen(viewModel: EBloodViewModel) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(Color(0xFFFFEBEE), RoundedCornerShape(12.dp))
-                                .border(1.dp, Color(0xFFEF5350), RoundedCornerShape(12.dp))
+                                .background(Color(0xFFFEF2F2), RoundedCornerShape(12.dp))
+                                .border(1.dp, Color(0xFFFCA5A5), RoundedCornerShape(12.dp))
                                 .padding(12.dp)
                         ) {
                             Text(
                                 text = authError ?: "",
-                                color = Color(0xFFC62828),
+                                color = Color(0xFFDC2626),
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -757,7 +948,7 @@ fun NameInputScreen(viewModel: EBloodViewModel) {
 
                     Text(
                         text = "আপনার নাম *",
-                        color = Color(0xFFD32F2F),
+                        color = CrimsonPrimary,
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp
                     )
@@ -776,7 +967,7 @@ fun NameInputScreen(viewModel: EBloodViewModel) {
                             Icon(
                                 imageVector = Icons.Default.Person,
                                 contentDescription = null,
-                                tint = Color(0xFFD32F2F),
+                                tint = CrimsonPrimary,
                                 modifier = Modifier.size(22.dp)
                             )
                         },
@@ -820,7 +1011,7 @@ fun NameInputScreen(viewModel: EBloodViewModel) {
                             .testTag("submit_name_button"),
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFD32F2F)
+                            containerColor = CrimsonPrimary
                         )
                     ) {
                         Text(
@@ -840,7 +1031,7 @@ fun NameInputScreen(viewModel: EBloodViewModel) {
                         Text(
                             text = "সরাসরি অ্যাপে প্রবেশ করুন",
                             fontSize = 13.5.sp,
-                            color = Color(0xFFD32F2F),
+                            color = CrimsonPrimary,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier
                                 .clickable {

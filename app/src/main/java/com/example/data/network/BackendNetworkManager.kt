@@ -46,9 +46,9 @@ object BackendNetworkManager {
     private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
 
     private val client: OkHttpClient = OkHttpClient.Builder()
-        .connectTimeout(12, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
-        .writeTimeout(15, TimeUnit.SECONDS)
+        .connectTimeout(45, TimeUnit.SECONDS)
+        .readTimeout(45, TimeUnit.SECONDS)
+        .writeTimeout(45, TimeUnit.SECONDS)
         .retryOnConnectionFailure(true)
         .build()
 
@@ -555,12 +555,39 @@ object BackendNetworkManager {
                 var count = 0
                 val keys = dataObj.keys()
                 while (keys.hasNext()) {
-                    val key = keys.next()
-                    val value = dataObj.optString(key, "")
-                    if (value.isNotEmpty()) {
-                        repository.saveSetting(key, value)
-                        count++
+                    val rawKey = keys.next()
+                    val value = dataObj.optString(rawKey, "")
+                    repository.saveSetting(rawKey, value)
+
+                    // Also save aliases so Website Admin controls and Mobile App controls sync together!
+                    val altKeys = when (rawKey) {
+                        "app_notice" -> listOf("appNotice", "notice")
+                        "appNotice" -> listOf("app_notice", "notice")
+                        "website_announcement" -> listOf("websiteAnnouncement", "app_notice", "appNotice", "notice")
+                        "website_hero_title" -> listOf("websiteHeroTitle")
+                        "website_title" -> listOf("websiteTitle", "app_name", "appName")
+                        "emergency_notice" -> listOf("emergencyNotice")
+                        "emergencyNotice" -> listOf("emergency_notice")
+                        "donation_number" -> listOf("donationNumber", "deposit_number", "depositNumber")
+                        "donationNumber" -> listOf("donation_number", "deposit_number", "depositNumber")
+                        "website_helpline" -> listOf("websiteHelpline", "contact_number", "contactNumber", "support_number", "supportNumber")
+                        "contact_number" -> listOf("contactNumber", "website_helpline", "websiteHelpline")
+                        "contactNumber" -> listOf("contact_number", "website_helpline", "websiteHelpline")
+                        "support_number" -> listOf("supportNumber")
+                        "supportNumber" -> listOf("support_number")
+                        "app_logo_url" -> listOf("appLogoUrl")
+                        "appLogoUrl" -> listOf("app_logo_url")
+                        "app_name" -> listOf("appName", "website_title", "websiteTitle")
+                        "appName" -> listOf("app_name", "website_title", "websiteTitle")
+                        "maintenance_mode" -> listOf("maintenanceMode")
+                        "maintenanceMode" -> listOf("maintenance_mode")
+                        else -> emptyList()
                     }
+                    for (altKey in altKeys) {
+                        repository.saveSetting(altKey, value)
+                    }
+
+                    count++
                 }
 
                 SyncResult(

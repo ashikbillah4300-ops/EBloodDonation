@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.Home
@@ -44,6 +45,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import com.google.firebase.FirebaseApp
 import com.example.ui.components.EmergencyAlarmOverlay
 import com.example.ui.screens.AdminDashboardScreen
@@ -82,8 +86,40 @@ class MainActivity : ComponentActivity() {
 
         try {
             FirebaseApp.initializeApp(this)
-        } catch (e: Exception) {
-            e.printStackTrace()
+
+            val isEmulator = com.example.util.DeviceUtils.isEmulator()
+            val availability = com.google.android.gms.common.GoogleApiAvailability.getInstance()
+            val resultCode = availability.isGooglePlayServicesAvailable(this)
+
+            if (!isEmulator && resultCode == com.google.android.gms.common.ConnectionResult.SUCCESS) {
+                com.google.firebase.messaging.FirebaseMessaging.getInstance().isAutoInitEnabled = true
+                com.google.firebase.messaging.FirebaseMessaging.getInstance().token
+                    .addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            val token = task.result
+                            android.util.Log.d("FCM", "FCM token retrieved: $token")
+                            val sessionManager = com.example.util.SessionManager(this)
+                            val userPhone = sessionManager.getPhone()
+                            val backendUrl = sessionManager.getBackendUrl()
+                            lifecycleScope.launch(Dispatchers.IO) {
+                                try {
+                                    com.example.data.network.BackendNetworkManager.registerFcmToken(backendUrl, token, userPhone)
+                                } catch (e: Exception) {
+                                    android.util.Log.w("FCM", "Failed to send FCM token to backend: ${e.message}")
+                                }
+                            }
+                        } else {
+                            android.util.Log.w("FCM", "FCM token retrieval skipped: ${task.exception?.message}")
+                        }
+                    }
+            } else {
+                try {
+                    com.google.firebase.messaging.FirebaseMessaging.getInstance().isAutoInitEnabled = false
+                } catch (_: Throwable) {}
+                android.util.Log.i("FCM", "Running in emulator or Google Play Services unavailable (code: $resultCode). FCM skipped in favor of direct local emergency alarms & polling.")
+            }
+        } catch (e: Throwable) {
+            android.util.Log.w("FCM", "Firebase initialization skipped gracefully: ${e.message}")
         }
 
         setContent {
@@ -284,6 +320,7 @@ fun EBloodAppRoot(viewModel: EBloodViewModel) {
                 .fillMaxSize()
                 .background(DarkBackground)
                 .padding(innerPadding)
+                .statusBarsPadding()
         ) {
             // Main Screen Routing
             when (currentScreen) {

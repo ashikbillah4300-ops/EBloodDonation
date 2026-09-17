@@ -8,20 +8,20 @@ import androidx.compose.ui.graphics.Color
 // CompositionLocal to track if dark mode is active
 val LocalIsDarkMode = staticCompositionLocalOf { false }
 
-// Primary Crimson Red Accents
-val CrimsonPrimary = Color(0xFFD32F2F)
-val CrimsonPrimaryDark = Color(0xFFB71C1C)
-val CrimsonPrimaryLight = Color(0xFFEF5350)
+// Primary Brand Accents (Matching Login Page Modern Blue Theme)
+val CrimsonPrimary = Color(0xFF2563EB)
+val CrimsonPrimaryDark = Color(0xFF1D4ED8)
+val CrimsonPrimaryLight = Color(0xFF60A5FA)
 
 val CrimsonContainer: Color
     @Composable
     @ReadOnlyComposable
-    get() = if (LocalIsDarkMode.current) Color(0xFF3B1219) else Color(0xFFFDE8EA)
+    get() = if (LocalIsDarkMode.current) Color(0xFF1E3A8A) else Color(0xFFEFF6FF)
 
 val OnCrimsonContainer: Color
     @Composable
     @ReadOnlyComposable
-    get() = if (LocalIsDarkMode.current) Color(0xFFFECDD3) else Color(0xFFD32F2F)
+    get() = if (LocalIsDarkMode.current) Color(0xFFBFDBFE) else Color(0xFF2563EB)
 
 // Dynamic Background
 val DarkBackground: Color
