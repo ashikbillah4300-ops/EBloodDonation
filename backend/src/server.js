@@ -38,6 +38,14 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'x-user-phone', 'X-Requested-With']
 }));
 
+// Restore URL if rewritten by Vercel
+app.use((req, res, next) => {
+  if (req.headers['x-matched-path']) {
+    req.url = req.headers['x-matched-path'];
+  }
+  next();
+});
+
 // Support uploading APK up to 100MB directly via Admin Panel
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ extended: true, limit: '100mb' }));
