@@ -4,6 +4,16 @@ A comprehensive, production-ready emergency blood donation application ecosystem
 
 ---
 
+## 📱 Download Android App (APK)
+
+[![Download APK](https://img.shields.io/badge/Download-APK-red?style=for-the-badge&logo=android)](https://github.com/ashikbillah4300-ops/EBloodDonation/releases/latest/download/EBloodDonation-debug.apk)
+
+You can download the latest Android application directly from GitHub:
+- **Direct Download:** [Download EBloodDonation-debug.apk](https://github.com/ashikbillah4300-ops/EBloodDonation/releases/latest/download/EBloodDonation-debug.apk)
+- **All Releases:** [Browse GitHub Releases](https://github.com/ashikbillah4300-ops/EBloodDonation/releases)
+
+---
+
 ## 🏗️ Architecture Overview
 
 ```
