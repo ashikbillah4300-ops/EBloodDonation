@@ -46,6 +46,18 @@ app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 app.use(express.static(path.join(__dirname, '../public')));
 app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
+// Safe cache for static HTML
+let cachedIndexHtml = null;
+let cachedAdminHtml = null;
+try {
+  const p1 = path.join(__dirname, '../public/index.html');
+  if (fs.existsSync(p1)) cachedIndexHtml = fs.readFileSync(p1, 'utf8');
+} catch (e) {}
+try {
+  const p2 = path.join(__dirname, '../public/admin.html');
+  if (fs.existsSync(p2)) cachedAdminHtml = fs.readFileSync(p2, 'utf8');
+} catch (e) {}
+
 // Helper to locate public files safely across different deployment root directories
 const getPublicFilePath = (fileName) => {
   const candidates = [
@@ -62,15 +74,28 @@ const getPublicFilePath = (fileName) => {
 
 // Serve Public Home Page on Root (/) - NO password required
 app.get('/', (req, res) => {
-  res.sendFile(getPublicFilePath('index.html'));
+  if (cachedIndexHtml) {
+    return res.type('html').send(cachedIndexHtml);
+  }
+  const file = getPublicFilePath('index.html');
+  if (fs.existsSync(file)) {
+    return res.sendFile(file);
+  }
+  res.redirect('/admin');
 });
 
 // Serve Admin Control Panel on /admin and /admin-panel
 app.get('/admin', (req, res) => {
+  if (cachedAdminHtml) {
+    return res.type('html').send(cachedAdminHtml);
+  }
   res.sendFile(getPublicFilePath('admin.html'));
 });
 
 app.get('/admin-panel', (req, res) => {
+  if (cachedAdminHtml) {
+    return res.type('html').send(cachedAdminHtml);
+  }
   res.sendFile(getPublicFilePath('admin.html'));
 });
 
@@ -229,11 +254,9 @@ const initDatabase = async () => {
 };
 
 // Ensure DB is initialized before processing API requests
-app.use(async (req, res, next) => {
-  try {
-    await initDatabase();
-  } catch (err) {
-    // Non-blocking fallback
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api') || req.path.startsWith('/admin/')) {
+    initDatabase().catch(() => {});
   }
   next();
 });
