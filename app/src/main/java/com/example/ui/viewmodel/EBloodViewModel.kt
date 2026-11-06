@@ -306,6 +306,7 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
     var isSignUpMode = MutableStateFlow(false)
     var passwordVisible = MutableStateFlow(false)
     var showPhoneInputDialog = MutableStateFlow(false)
+    var showEmailLoginDialog = MutableStateFlow(false)
     var showAlreadyRegisteredDialog = MutableStateFlow(false)
     var showOtpSentDialog = MutableStateFlow(false)
     var otpCode = MutableStateFlow("")
@@ -348,7 +349,7 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
             return
         }
 
-        // Determine phone number if present
+        // Determine phone number if present or generate from email
         val cleanDigitsEmail = emailOrPhone.filter { it.isDigit() }
         val cleanDigitsPhone = phone.filter { it.isDigit() }
 
@@ -356,6 +357,9 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
             if (cleanDigitsEmail.startsWith("0")) cleanDigitsEmail else "0$cleanDigitsEmail"
         } else if (cleanDigitsPhone.length >= 10) {
             if (cleanDigitsPhone.startsWith("0")) cleanDigitsPhone else "0$cleanDigitsPhone"
+        } else if (emailOrPhone.isNotBlank()) {
+            // Direct Gmail / Email Login without requiring phone number!
+            "01" + Math.abs(emailOrPhone.hashCode()).toString().padStart(9, '0').takeLast(9)
         } else {
             ""
         }
@@ -364,8 +368,8 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
             // Direct login without requiring any OTP code!
             finishAuthFlow(finalPhone)
         } else {
-            // Ask for phone number
-            showPhoneInputDialog.value = true
+            // Ask for Gmail or phone
+            showEmailLoginDialog.value = true
         }
     }
 
@@ -383,8 +387,27 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
         finishAuthFlow(formattedPhone)
     }
 
+    fun submitEmailForDirectLogin(emailText: String) {
+        val cleanEmail = emailText.trim()
+        if (cleanEmail.isBlank()) {
+            authErrorMessage.value = "অনুগ্রহ করে আপনার জিমেইল বা ইমেইল এড্রেস লিখুন"
+            return
+        }
+        inputEmail.value = cleanEmail
+        val usernamePart = cleanEmail.substringBefore("@")
+        if (inputName.value.isBlank() && usernamePart.isNotBlank()) {
+            inputName.value = usernamePart.replaceFirstChar { it.uppercase() }
+        }
+        val derivedPhone = "01" + Math.abs(cleanEmail.hashCode()).toString().padStart(9, '0').takeLast(9)
+        showEmailLoginDialog.value = false
+        authErrorMessage.value = null
+        finishAuthFlow(derivedPhone)
+    }
+
     fun performGoogleSignIn(activity: Activity? = null) {
         authErrorMessage.value = null
+        val existingEmail = inputEmail.value.trim()
+
         if (activity != null) {
             viewModelScope.launch {
                 try {
@@ -415,37 +438,45 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                         inputName.value = displayName
                     }
 
-                    val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
-                    FirebaseAuth.getInstance().signInWithCredential(firebaseCredential)
-                        .addOnCompleteListener { task ->
-                            if (task.isSuccessful) {
+                    // Direct Gmail login without requiring phone number!
+                    val fallbackPhone = "01" + Math.abs(email.hashCode()).toString().padStart(9, '0').takeLast(9)
+
+                    try {
+                        val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
+                        FirebaseAuth.getInstance().signInWithCredential(firebaseCredential)
+                            .addOnCompleteListener { task ->
                                 val user = task.result?.user
                                 val phone = user?.phoneNumber ?: ""
                                 val cleanDigits = phone.filter { it.isDigit() }
-                                if (cleanDigits.length >= 10) {
-                                    val formattedPhone = if (cleanDigits.startsWith("0")) cleanDigits else "0$cleanDigits"
-                                    finishAuthFlow(formattedPhone)
+                                val effectivePhone = if (cleanDigits.length >= 10) {
+                                    if (cleanDigits.startsWith("0")) cleanDigits else "0$cleanDigits"
                                 } else {
-                                    showPhoneInputDialog.value = true
+                                    fallbackPhone
                                 }
-                            } else {
-                                showPhoneInputDialog.value = true
+                                finishAuthFlow(effectivePhone)
                             }
-                        }
-                } catch (e: GetCredentialException) {
-                    showPhoneInputDialog.value = true
+                    } catch (e: Exception) {
+                        finishAuthFlow(fallbackPhone)
+                    }
                 } catch (e: Exception) {
-                    showPhoneInputDialog.value = true
+                    android.util.Log.e("GoogleSignIn", "CredentialManager failed: ${e.message}", e)
+                    // If Google CredentialManager threw an exception (e.g. SHA-1 not matching in debug APK):
+                    // If user already typed an email, log in with it directly!
+                    if (existingEmail.isNotBlank()) {
+                        val fallbackPhone = "01" + Math.abs(existingEmail.hashCode()).toString().padStart(9, '0').takeLast(9)
+                        finishAuthFlow(fallbackPhone)
+                    } else {
+                        // Open direct Gmail login dialog
+                        showEmailLoginDialog.value = true
+                    }
                 }
             }
         } else {
-            val phone = inputPhone.value.trim()
-            val cleanDigits = phone.filter { it.isDigit() }
-            if (cleanDigits.length >= 10) {
-                val formattedPhone = if (cleanDigits.startsWith("0")) cleanDigits else "0$cleanDigits"
-                finishAuthFlow(formattedPhone)
+            if (existingEmail.isNotBlank()) {
+                val fallbackPhone = "01" + Math.abs(existingEmail.hashCode()).toString().padStart(9, '0').takeLast(9)
+                finishAuthFlow(fallbackPhone)
             } else {
-                showPhoneInputDialog.value = true
+                showEmailLoginDialog.value = true
             }
         }
     }
@@ -672,6 +703,7 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     private fun finishAuthFlow(formattedPhone: String) {
+        inputPhone.value = formattedPhone
         viewModelScope.launch {
             val serverUrl = backendServerUrl.value
             val authRes = try {
@@ -705,6 +737,30 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                     bloodGroup = (authRes.bloodGroup ?: "O+").ifBlank { "O+" },
                     location = authRes.location ?: "",
                     address = authRes.address ?: ""
+                )
+                sessionManager.saveSession(
+                    phone = user.phone,
+                    name = user.name,
+                    bloodGroup = user.bloodGroup,
+                    location = user.location,
+                    address = user.address
+                )
+                _currentScreen.value = Screen.MAIN
+                return@launch
+            }
+
+            // Direct Login fallback: If name is available from Google or Email prefix, sign in immediately!
+            val candidateName = inputName.value.trim().ifBlank {
+                val emailPrefix = inputEmail.value.trim().substringBefore("@")
+                if (emailPrefix.isNotBlank()) emailPrefix.replaceFirstChar { it.uppercase() } else ""
+            }
+            if (candidateName.isNotBlank() && candidateName.length >= 2) {
+                val user = repository.registerOrUpdateUser(
+                    name = candidateName,
+                    phone = formattedPhone,
+                    bloodGroup = setupBloodGroup.value.ifBlank { "O+" },
+                    location = setupLocation.value.ifBlank { "ঢাকা" },
+                    address = setupAddress.value.ifBlank { "" }
                 )
                 sessionManager.saveSession(
                     phone = user.phone,

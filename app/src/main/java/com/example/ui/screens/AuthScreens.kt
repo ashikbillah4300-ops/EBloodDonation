@@ -203,6 +203,7 @@ fun AuthScreen(viewModel: EBloodViewModel) {
     val isSignUp by viewModel.isSignUpMode.collectAsStateWithLifecycle()
     val passwordVisible by viewModel.passwordVisible.collectAsStateWithLifecycle()
     val showPhoneDialog by viewModel.showPhoneInputDialog.collectAsStateWithLifecycle()
+    val showEmailDialog by viewModel.showEmailLoginDialog.collectAsStateWithLifecycle()
     val authError by viewModel.authErrorMessage.collectAsStateWithLifecycle()
 
     Box(
@@ -548,6 +549,69 @@ fun AuthScreen(viewModel: EBloodViewModel) {
                 },
                 dismissButton = {
                     TextButton(onClick = { viewModel.showPhoneInputDialog.value = false }) {
+                        Text("বাতিল", color = Color(0xFF6B7280))
+                    }
+                },
+                containerColor = Color.White,
+                shape = RoundedCornerShape(16.dp)
+            )
+        }
+
+        // 11. Gmail / Email Input Modal (Direct login with Gmail without phone number)
+        if (showEmailDialog) {
+            var emailText by remember { mutableStateOf(email) }
+            AlertDialog(
+                onDismissRequest = { viewModel.showEmailLoginDialog.value = false },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        GoogleGLogo(modifier = Modifier.size(22.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = "জিমেইল দিয়ে লগইন করুন",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF111827)
+                        )
+                    }
+                },
+                text = {
+                    Column {
+                        Text(
+                            text = "আপনার জিমেইল এড্রেস লিখুন। কোনো পাসওয়ার্ড বা মোবাইল নম্বর ছাড়াই সরাসরি অ্যাপে লগইন করতে পারবেন।",
+                            fontSize = 13.5.sp,
+                            color = Color(0xFF4B5563),
+                            lineHeight = 18.sp
+                        )
+                        Spacer(modifier = Modifier.height(14.dp))
+                        OutlinedTextField(
+                            value = emailText,
+                            onValueChange = { emailText = it },
+                            placeholder = { Text("your@gmail.com") },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Outlined.Email,
+                                    contentDescription = null,
+                                    tint = Color(0xFF2563EB)
+                                )
+                            },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = { viewModel.submitEmailForDirectLogin(emailText) },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("লগইন করুন →", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { viewModel.showEmailLoginDialog.value = false }) {
                         Text("বাতিল", color = Color(0xFF6B7280))
                     }
                 },
