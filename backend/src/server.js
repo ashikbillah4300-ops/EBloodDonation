@@ -58,7 +58,7 @@ const loadStaticFile = (fileName) => {
   for (const p of candidates) {
     try {
       if (fs.existsSync(p)) return fs.readFileSync(p, 'utf8');
-    } catch (e) {}
+    } catch (e) { }
   }
   return null;
 };
@@ -195,10 +195,6 @@ app.get('/download/eblood.apk', (req, res) => {
     `);
 });
 
-// Routes
-app.use('/admin', adminRoutes);
-app.use('/api', apiRoutes);
-
 // Seed default Admin securely if not exists
 const seedDefaultAdminIfEmpty = async () => {
   try {
@@ -262,12 +258,18 @@ const initDatabase = async () => {
 };
 
 // Ensure DB is initialized before processing API requests
-app.use((req, res, next) => {
-  if (req.path.startsWith('/api') || req.path.startsWith('/admin/')) {
-    initDatabase().catch(() => {});
+app.use(async (req, res, next) => {
+  if (req.path.startsWith('/api') || req.path.startsWith('/admin')) {
+    try {
+      await initDatabase();
+    } catch (err) {}
   }
   next();
 });
+
+// Routes
+app.use('/admin', adminRoutes);
+app.use('/api', apiRoutes);
 
 // Database synchronization and server start for standalone/Render
 const startServer = async () => {
