@@ -32,8 +32,30 @@ jobs:
       - name: Make Gradlew Executable
         run: chmod +x gradlew
 
+      - name: Setup Fixed Debug Keystore for Google Sign-In
+        run: |
+          if [ ! -f debug.keystore ]; then
+            keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
+          SHA1_FINGERPRINT=$(keytool -list -v -keystore debug.keystore -alias androiddebugkey -storepass android | grep "SHA1:" | head -n 1 | awk '{print $2}')
+          SHA256_FINGERPRINT=$(keytool -list -v -keystore debug.keystore -alias androiddebugkey -storepass android | grep "SHA256:" | head -n 1 | awk '{print $2}')
+          echo "SHA1_FINGERPRINT=$SHA1_FINGERPRINT" >> $GITHUB_ENV
+          echo "SHA256_FINGERPRINT=$SHA256_FINGERPRINT" >> $GITHUB_ENV
+          echo "Debug Keystore SHA1: $SHA1_FINGERPRINT"
+          echo "Debug Keystore SHA256: $SHA256_FINGERPRINT"
+
       - name: Build Debug APK
         run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Commit Fixed Debug Keystore
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          if git status --porcelain | grep debug.keystore; then
+            git add debug.keystore
+            git commit -m "chore: persist fixed debug keystore for Google Sign-In"
+            git push origin main || echo "Keystore already committed or branch moved"
+          fi
 
       - name: Rename APK for Release
         run: |
@@ -60,6 +82,12 @@ jobs:
             - **App Name:** EBloodDonation
             - **Package:** `com.EBloodDonation`
             - **Download Link:** [EBloodDonation-debug.apk](https://github.com/${{ github.repository }}/releases/download/${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'latest' }}/EBloodDonation-debug.apk)
+            
+            ---
+            ### 🔑 Firebase Google Sign-In Certificate
+            Add this SHA-1 to your Firebase Console (*Project Settings -> Your apps -> Add fingerprint*):
+            - **SHA-1:** `${{ env.SHA1_FINGERPRINT }}`
+            - **SHA-256:** `${{ env.SHA256_FINGERPRINT }}`
           files: release-output/EBloodDonation-debug.apk
           draft: false
           prerelease: false

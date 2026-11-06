@@ -17,9 +17,13 @@ import com.example.util.DeviceUtils
 import com.example.util.EmergencyAlarmManager
 import com.example.util.SessionManager
 import android.app.Activity
+import android.util.Log
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.GetCredentialCustomException
 import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.NoCredentialException
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.FirebaseException
@@ -407,71 +411,104 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
     fun performGoogleSignIn(activity: Activity? = null) {
         authErrorMessage.value = null
         val existingEmail = inputEmail.value.trim()
+        Log.d("GoogleSignIn", "performGoogleSignIn called. activity != null: ${activity != null}, existingEmail: '$existingEmail'")
 
         if (activity != null) {
             viewModelScope.launch {
                 try {
                     val credentialManager = CredentialManager.create(activity)
-                    val rawNonce = UUID.randomUUID().toString()
-                    val bytes = MessageDigest.getInstance("SHA-256").digest(rawNonce.toByteArray())
-                    val hashedNonce = bytes.fold("") { str, it -> str + "%02x".format(it) }
+
+                    // Get Web Client ID dynamically from google-services resources or fallback
+                    val webClientId = try {
+                        val resId = activity.resources.getIdentifier("default_web_client_id", "string", activity.packageName)
+                        if (resId != 0) activity.getString(resId) else "743053486976-crsi0qt5qkrrqaocaep1bqqujtub0oj5.apps.googleusercontent.com"
+                    } catch (e: Exception) {
+                        "743053486976-crsi0qt5qkrrqaocaep1bqqujtub0oj5.apps.googleusercontent.com"
+                    }
+                    Log.d("GoogleSignIn", "Using Web Client ID: $webClientId")
 
                     val googleIdOption = GetGoogleIdOption.Builder()
                         .setFilterByAuthorizedAccounts(false)
-                        .setServerClientId("743053486976-crsi0qt5qkrrqaocaep1bqqujtub0oj5.apps.googleusercontent.com")
-                        .setNonce(hashedNonce)
+                        .setServerClientId(webClientId)
+                        .setAutoSelectEnabled(false)
                         .build()
 
                     val request = GetCredentialRequest.Builder()
                         .addCredentialOption(googleIdOption)
                         .build()
 
+                    Log.d("GoogleSignIn", "Calling credentialManager.getCredential...")
                     val result = credentialManager.getCredential(request = request, context = activity)
                     val credential = result.credential
+                    Log.d("GoogleSignIn", "Credential selected of type: ${credential.type}")
+
                     val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
                     val idToken = googleIdTokenCredential.idToken
                     val email = googleIdTokenCredential.id
-                    val displayName = googleIdTokenCredential.displayName
+                    val displayName = googleIdTokenCredential.displayName ?: ""
 
+                    Log.d("GoogleSignIn", "Google ID Token received for email: $email, name: $displayName")
                     inputEmail.value = email
-                    if (!displayName.isNullOrBlank()) {
+                    sessionManager.saveEmail(email)
+                    if (displayName.isNotBlank()) {
                         inputName.value = displayName
                     }
 
-                    // Direct Gmail login without requiring phone number!
+                    // Direct identifier generated from email hash
                     val fallbackPhone = "01" + Math.abs(email.hashCode()).toString().padStart(9, '0').takeLast(9)
 
-                    try {
-                        val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
-                        FirebaseAuth.getInstance().signInWithCredential(firebaseCredential)
-                            .addOnCompleteListener { task ->
-                                val user = task.result?.user
-                                val phone = user?.phoneNumber ?: ""
-                                val cleanDigits = phone.filter { it.isDigit() }
-                                val effectivePhone = if (cleanDigits.length >= 10) {
-                                    if (cleanDigits.startsWith("0")) cleanDigits else "0$cleanDigits"
-                                } else {
-                                    fallbackPhone
-                                }
-                                finishAuthFlow(effectivePhone)
+                    val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
+                    Log.d("GoogleSignIn", "Authenticating with Firebase Auth...")
+                    FirebaseAuth.getInstance().signInWithCredential(firebaseCredential)
+                        .addOnSuccessListener { authResult ->
+                            val user = authResult.user
+                            Log.d("GoogleSignIn", "Firebase Auth SUCCESS! User UID: ${user?.uid}, Email: ${user?.email}")
+                            val phone = user?.phoneNumber ?: ""
+                            val cleanDigits = phone.filter { it.isDigit() }
+                            val effectivePhone = if (cleanDigits.length >= 10) {
+                                if (cleanDigits.startsWith("0")) cleanDigits else "0$cleanDigits"
+                            } else {
+                                fallbackPhone
                             }
-                    } catch (e: Exception) {
-                        finishAuthFlow(fallbackPhone)
+                            finishAuthFlow(effectivePhone)
+                        }
+                        .addOnFailureListener { e ->
+                            Log.e("GoogleSignIn", "Firebase Auth signInWithCredential failed: ${e.message}", e)
+                            authErrorMessage.value = "Firebase Authentication error: ${e.localizedMessage ?: e.message}"
+                            // Fallback to local session so user is not blocked
+                            finishAuthFlow(fallbackPhone)
+                        }
+                } catch (e: GetCredentialCancellationException) {
+                    Log.w("GoogleSignIn", "Google Sign-In was cancelled by user: ${e.message}")
+                    authErrorMessage.value = "গুগল সাইন-ইন বাতিল করা হয়েছে (Sign-in cancelled)"
+                } catch (e: NoCredentialException) {
+                    Log.e("GoogleSignIn", "No credentials available on device: ${e.message}", e)
+                    authErrorMessage.value = "ডিভাইসে কোনো গুগল একাউন্ট পাওয়া যায়নি (No Google account found)"
+                    showEmailLoginDialog.value = true
+                } catch (e: GetCredentialCustomException) {
+                    Log.e("GoogleSignIn", "CredentialManager CustomException (type=${e.type}): ${e.message}", e)
+                    val msg = e.message ?: ""
+                    if (e.type.contains("16") || msg.contains("16") || msg.contains("Cannot find a matching credential", ignoreCase = true)) {
+                        authErrorMessage.value = "⚠️ Google Sign-In Setup Issue (Error 16 / SHA-1 Mismatch):\nFirebase Console-এ আপনার অ্যাপের সাইনিং SHA-1 কি যোগ করা নেই।"
+                    } else if (e.type.contains("10") || msg.contains("10") || msg.contains("DEVELOPER_ERROR", ignoreCase = true)) {
+                        authErrorMessage.value = "⚠️ Google Developer Error (Error 10):\nFirebase Console-এ SHA-1 বা Google Sign-in Provider কনফিগার করা নেই।"
+                    } else {
+                        authErrorMessage.value = "Google সাইন-ইনে সমস্যা হয়েছে: ${e.type} - ${e.message}"
                     }
+                    showEmailLoginDialog.value = true
                 } catch (e: Exception) {
-                    android.util.Log.e("GoogleSignIn", "CredentialManager failed: ${e.message}", e)
-                    // If Google CredentialManager threw an exception (e.g. SHA-1 not matching in debug APK):
-                    // If user already typed an email, log in with it directly!
+                    Log.e("GoogleSignIn", "Unexpected exception during Google Sign-In: ${e.message}", e)
+                    authErrorMessage.value = "Google লগইন ব্যর্থ হয়েছে: ${e.localizedMessage ?: e.message}"
                     if (existingEmail.isNotBlank()) {
                         val fallbackPhone = "01" + Math.abs(existingEmail.hashCode()).toString().padStart(9, '0').takeLast(9)
                         finishAuthFlow(fallbackPhone)
                     } else {
-                        // Open direct Gmail login dialog
                         showEmailLoginDialog.value = true
                     }
                 }
             }
         } else {
+            Log.d("GoogleSignIn", "performGoogleSignIn called without activity reference")
             if (existingEmail.isNotBlank()) {
                 val fallbackPhone = "01" + Math.abs(existingEmail.hashCode()).toString().padStart(9, '0').takeLast(9)
                 finishAuthFlow(fallbackPhone)
@@ -725,7 +762,8 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                         name = user.name,
                         bloodGroup = user.bloodGroup,
                         location = user.location,
-                        address = user.address
+                        address = user.address,
+                        email = inputEmail.value.trim()
                     )
                     _currentScreen.value = Screen.MAIN
                     return@launch
@@ -743,7 +781,8 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                     name = user.name,
                     bloodGroup = user.bloodGroup,
                     location = user.location,
-                    address = user.address
+                    address = user.address,
+                    email = inputEmail.value.trim()
                 )
                 _currentScreen.value = Screen.MAIN
                 return@launch
@@ -767,7 +806,8 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                     name = user.name,
                     bloodGroup = user.bloodGroup,
                     location = user.location,
-                    address = user.address
+                    address = user.address,
+                    email = inputEmail.value.trim()
                 )
                 _currentScreen.value = Screen.MAIN
                 return@launch
@@ -986,14 +1026,26 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
 
     fun signOut() {
         viewModelScope.launch {
-            repository.signOut()
+            Log.d("Auth", "User signing out...")
+            try {
+                repository.signOut()
+            } catch (e: Exception) {
+                Log.e("Auth", "Error signing out repository", e)
+            }
             sessionManager.clearSession()
             EmergencyAlarmManager.stopAlarm()
             inputName.value = ""
             inputPhone.value = ""
+            inputEmail.value = ""
+            inputPassword.value = ""
+            authErrorMessage.value = null
             _currentScreen.value = Screen.AUTH
+            Log.d("Auth", "User successfully signed out and navigated to AUTH screen.")
         }
     }
+
+    // Working Logout alias
+    fun logout() = signOut()
 
     fun calculateDistanceKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
         val r = 6371.0

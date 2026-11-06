@@ -11,6 +11,7 @@ class SessionManager(context: Context) {
     companion object {
         private const val KEY_IS_LOGGED_IN = "key_is_logged_in"
         private const val KEY_PHONE = "key_user_phone"
+        private const val KEY_EMAIL = "key_user_email"
         private const val KEY_NAME = "key_user_name"
         private const val KEY_BLOOD_GROUP = "key_blood_group"
         private const val KEY_LOCATION = "key_location"
@@ -25,16 +26,36 @@ class SessionManager(context: Context) {
         name: String = "",
         bloodGroup: String = "",
         location: String = "",
-        address: String = ""
+        address: String = "",
+        email: String = ""
     ) {
-        prefs.edit()
+        val editor = prefs.edit()
             .putBoolean(KEY_IS_LOGGED_IN, true)
             .putString(KEY_PHONE, phone)
             .putString(KEY_NAME, name)
             .putString(KEY_BLOOD_GROUP, bloodGroup)
             .putString(KEY_LOCATION, location)
             .putString(KEY_ADDRESS, address)
-            .apply()
+        if (email.isNotBlank()) {
+            editor.putString(KEY_EMAIL, email)
+        }
+        editor.apply()
+    }
+
+    fun saveEmail(email: String) {
+        if (email.isNotBlank()) {
+            prefs.edit().putString(KEY_EMAIL, email.trim()).apply()
+        }
+    }
+
+    fun getEmail(): String {
+        val saved = prefs.getString(KEY_EMAIL, "") ?: ""
+        if (saved.isNotBlank()) return saved
+        return try {
+            FirebaseAuth.getInstance().currentUser?.email ?: ""
+        } catch (e: Exception) {
+            ""
+        }
     }
 
     fun updateProfile(
@@ -70,6 +91,11 @@ class SessionManager(context: Context) {
             if (!fbPhone.isNullOrBlank()) {
                 val clean = fbPhone.replace("+88", "").filter { it.isDigit() }
                 return if (clean.startsWith("0")) clean else "0$clean"
+            }
+            val fbEmail = FirebaseAuth.getInstance().currentUser?.email
+            val email = if (!fbEmail.isNullOrBlank()) fbEmail else getEmail()
+            if (email.isNotBlank()) {
+                return "01" + Math.abs(email.hashCode()).toString().padStart(9, '0').takeLast(9)
             }
         } catch (e: Exception) {
             e.printStackTrace()
