@@ -47,16 +47,24 @@ app.use(express.static(path.join(__dirname, '../public')));
 app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
 // Safe cache for static HTML
-let cachedIndexHtml = null;
-let cachedAdminHtml = null;
-try {
-  const p1 = path.join(__dirname, '../public/index.html');
-  if (fs.existsSync(p1)) cachedIndexHtml = fs.readFileSync(p1, 'utf8');
-} catch (e) {}
-try {
-  const p2 = path.join(__dirname, '../public/admin.html');
-  if (fs.existsSync(p2)) cachedAdminHtml = fs.readFileSync(p2, 'utf8');
-} catch (e) {}
+const loadStaticFile = (fileName) => {
+  const candidates = [
+    path.join(__dirname, '../public', fileName),
+    path.join(__dirname, 'public', fileName),
+    path.join(process.cwd(), 'public', fileName),
+    path.join(process.cwd(), 'backend/public', fileName),
+    path.join(__dirname, '../../backend/public', fileName)
+  ];
+  for (const p of candidates) {
+    try {
+      if (fs.existsSync(p)) return fs.readFileSync(p, 'utf8');
+    } catch (e) {}
+  }
+  return null;
+};
+
+let cachedIndexHtml = loadStaticFile('index.html');
+let cachedAdminHtml = loadStaticFile('admin.html');
 
 // Helper to locate public files safely across different deployment root directories
 const getPublicFilePath = (fileName) => {

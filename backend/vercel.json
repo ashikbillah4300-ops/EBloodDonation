@@ -1,8 +1,11 @@
 {
   "version": 2,
-  "cleanUrls": true,
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "public/**"
+    }
+  },
   "rewrites": [
-    { "source": "/", "destination": "/index.html" },
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/admin-panel", "destination": "/admin.html" },
     { "source": "/api/:match*", "destination": "/api/index.js" },
