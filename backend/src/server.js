@@ -38,10 +38,15 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'x-user-phone', 'X-Requested-With']
 }));
 
-// Restore URL if rewritten by Vercel
+// Normalize incoming path for Vercel Serverless Function
 app.use((req, res, next) => {
-  if (req.headers['x-matched-path']) {
-    req.url = req.headers['x-matched-path'];
+  // If Vercel invokes function with stripped /api prefix, prepend /api so routes match
+  if (!req.url.startsWith('/api') && !req.url.startsWith('/admin') && !req.url.startsWith('/download') && req.url !== '/' && req.url !== '/index.html' && req.url !== '/admin.html') {
+    const apiSegments = ['health', 'settings', 'users', 'auth', 'blood-requests', 'donations', 'notification-token'];
+    const firstSegment = req.url.split('/')[1]?.split('?')[0];
+    if (apiSegments.includes(firstSegment)) {
+      req.url = '/api' + req.url;
+    }
   }
   next();
 });

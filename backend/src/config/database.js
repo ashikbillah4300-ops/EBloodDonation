@@ -20,6 +20,12 @@ const sequelize = connectionString
   ? new Sequelize(connectionString, {
     dialect: 'postgres',
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
+    pool: {
+      max: 5,
+      min: 0,
+      acquire: 20000,
+      idle: 10000
+    },
     dialectOptions: isSslRequired ? {
       ssl: {
         require: true,
