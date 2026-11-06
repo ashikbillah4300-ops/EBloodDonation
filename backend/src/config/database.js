@@ -1,7 +1,14 @@
 const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
-const connectionString = process.env.DATABASE_URL;
+let connectionString = process.env.DATABASE_URL;
+if (connectionString) {
+  // Strip channel_binding which is not supported by node-postgres
+  connectionString = connectionString.replace(/[?&]channel_binding=[^&]+/g, '');
+  if (!connectionString.includes('?') && connectionString.includes('&')) {
+    connectionString = connectionString.replace('&', '?');
+  }
+}
 
 const isSslRequired = connectionString && (
   connectionString.includes('sslmode=require') ||
