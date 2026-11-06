@@ -1,7 +1,8 @@
 {
   "version": 2,
   "redirects": [
-    { "source": "/", "destination": "/index.html", "permanent": false }
+    { "source": "/", "destination": "/index.html", "permanent": false },
+    { "source": "/download/eblood.apk", "destination": "https://github.com/ashikbillah4300-ops/EBloodDonation/releases/download/latest/EBloodDonation-debug.apk", "permanent": false }
   ],
   "rewrites": [
     { "source": "/admin", "destination": "/admin.html" },

@@ -478,6 +478,24 @@ fun AuthScreen(viewModel: EBloodViewModel) {
                 }
             }
 
+            if (!authError.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(14.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFFEF2F2), RoundedCornerShape(10.dp))
+                        .border(1.dp, Color(0xFFFCA5A5), RoundedCornerShape(10.dp))
+                        .padding(12.dp)
+                ) {
+                    Text(
+                        text = authError ?: "",
+                        color = Color(0xFFDC2626),
+                        fontSize = 13.5.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.height(32.dp))
 
             // 9. Bottom Sign In / Sign Up Link (Exact match to screenshot)
@@ -498,6 +516,15 @@ fun AuthScreen(viewModel: EBloodViewModel) {
                     modifier = Modifier.clickable { viewModel.toggleAuthMode() }
                 )
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "EBloodDonation v2.0 (Google Login Updated)",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF9CA3AF)
+            )
         }
 
         // 10. Phone Number Input Modal (When phone is required for direct login without OTP)
