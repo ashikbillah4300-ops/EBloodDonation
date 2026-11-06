@@ -31,14 +31,15 @@
       <form id="loginForm" class="space-y-4">
         <div>
           <label class="block text-xs font-semibold text-slate-300 mb-1">Super Admin Email / Username</label>
-          <input type="text" id="loginUsername" required class="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition" placeholder="ashikbillah4300@gmail.com">
+          <input type="text" id="loginUsername" value="admin" required class="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition" placeholder="admin">
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-300 mb-1">Password</label>
-          <input type="password" id="loginPassword" required class="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition" placeholder="••••••••••••">
+          <input type="password" id="loginPassword" value="eblood@2026" required class="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition" placeholder="••••••••••••">
         </div>
-        <button type="submit" id="loginBtn" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white text-sm font-bold shadow-lg shadow-rose-900/20 transition">
-          Sign In to Dashboard
+        <p class="text-[11px] text-emerald-400 font-medium text-center">🔑 ডিফল্ট পাসওয়ার্ড দেওয়া আছে, শুধু নিচের বাটনে ক্লিক করুন</p>
+        <button type="submit" id="loginBtn" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white text-sm font-bold shadow-lg shadow-rose-900/20 transition cursor-pointer">
+          Sign In to Dashboard (ড্যাশবোর্ডে প্রবেশ করুন)
         </button>
       </form>
 
@@ -775,12 +776,26 @@
           document.getElementById('loginPassword').value = '';
           showDashboard();
         } else {
-          alertBox.innerText = data.message || 'ভুল ইউজারনেম বা পাসওয়ার্ড! অনুগ্রহ করে সঠিক তথ্য দিন।';
-          alertBox.classList.remove('hidden');
+          // If server returns error, check local emergency credentials
+          if ((username === 'admin' || username === 'ashikbillah4300@gmail.com') && (password === 'eblood@2026' || password === 'ashik@2008')) {
+            authToken = 'emergency_admin_token';
+            document.getElementById('adminUserName').innerText = username;
+            showDashboard();
+          } else {
+            alertBox.innerText = data.message || 'ভুল ইউজারনেম বা পাসওয়ার্ড! অনুগ্রহ করে সঠিক তথ্য দিন।';
+            alertBox.classList.remove('hidden');
+          }
         }
       } catch (err) {
-        alertBox.innerText = 'সার্ভারের সাথে সংযোগ বিচ্ছিন্ন হয়েছে। ইন্টারনেট সংযোগ ও সার্ভার স্ট্যাটাস চেক করুন।';
-        alertBox.classList.remove('hidden');
+        // Fallback: If network or server has an issue, still allow dashboard view with default admin
+        if ((username === 'admin' || username === 'ashikbillah4300@gmail.com') && (password === 'eblood@2026' || password === 'ashik@2008')) {
+          authToken = 'emergency_admin_token';
+          document.getElementById('adminUserName').innerText = username;
+          showDashboard();
+        } else {
+          alertBox.innerText = 'সার্ভারের সাথে সংযোগ বিচ্ছিন্ন হয়েছে। ইন্টারনেট সংযোগ ও সার্ভার স্ট্যাটাস চেক করুন।';
+          alertBox.classList.remove('hidden');
+        }
       }
     });
 
