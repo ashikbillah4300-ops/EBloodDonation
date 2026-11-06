@@ -3,11 +3,17 @@ require('dotenv').config();
 
 const connectionString = process.env.DATABASE_URL;
 
+const isSslRequired = connectionString && (
+  connectionString.includes('sslmode=require') ||
+  connectionString.includes('neon.tech') ||
+  process.env.NODE_ENV === 'production'
+);
+
 const sequelize = connectionString
   ? new Sequelize(connectionString, {
       dialect: 'postgres',
       logging: process.env.NODE_ENV === 'development' ? console.log : false,
-      dialectOptions: process.env.NODE_ENV === 'production' ? {
+      dialectOptions: isSslRequired ? {
         ssl: {
           require: true,
           rejectUnauthorized: false
