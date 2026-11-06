@@ -46,18 +46,32 @@ app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 app.use(express.static(path.join(__dirname, '../public')));
 app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
+// Helper to locate public files safely across different deployment root directories
+const getPublicFilePath = (fileName) => {
+  const candidates = [
+    path.join(__dirname, '../public', fileName),
+    path.join(__dirname, '../../backend/public', fileName),
+    path.join(process.cwd(), 'public', fileName),
+    path.join(process.cwd(), 'backend/public', fileName)
+  ];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) return p;
+  }
+  return path.join(__dirname, '../public', fileName);
+};
+
 // Serve Public Home Page on Root (/) - NO password required
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/index.html'));
+  res.sendFile(getPublicFilePath('index.html'));
 });
 
 // Serve Admin Control Panel on /admin and /admin-panel
 app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/admin.html'));
+  res.sendFile(getPublicFilePath('admin.html'));
 });
 
 app.get('/admin-panel', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/admin.html'));
+  res.sendFile(getPublicFilePath('admin.html'));
 });
 
 // APK Download Route
@@ -191,33 +205,50 @@ const seedDefaultAdminIfEmpty = async () => {
   }
 };
 
-// Database synchronization and server start
-const startServer = async () => {
-  try {
-    await sequelize.authenticate();
-    console.log('PostgreSQL database connected successfully.');
-
-    // In development or when requested, sync models without deleting existing tables
-    await sequelize.sync({ alter: false });
-    console.log('Sequelize models synchronized.');
-
-    // Seed initial admin and app settings
-    await seedDefaultAdminIfEmpty();
-    await seedDefaultSettingsIfEmpty();
-
-    app.listen(PORT, () => {
-      console.log(`EBlood Backend & Admin Server running on http://localhost:${PORT}`);
-      console.log(`Web Admin Panel accessible at http://localhost:${PORT}/admin-panel`);
-    });
-  } catch (error) {
-    console.error('Unable to connect to database:', error.message);
-    // Start server in fallback mode so endpoints remain accessible
-    app.listen(PORT, () => {
-      console.log(`Server running in fallback mode on port ${PORT}`);
-    });
-  }
+// Cached database initialization promise for serverless and standalone
+let dbInitPromise = null;
+const initDatabase = async () => {
+  if (dbInitPromise) return dbInitPromise;
+  dbInitPromise = (async () => {
+    try {
+      if (process.env.DATABASE_URL) {
+        await sequelize.authenticate();
+        console.log('PostgreSQL database connected successfully.');
+        await sequelize.sync({ alter: false });
+        console.log('Sequelize models synchronized.');
+        await seedDefaultAdminIfEmpty();
+        await seedDefaultSettingsIfEmpty();
+      } else {
+        console.warn('DATABASE_URL is not configured; running without persistent DB.');
+      }
+    } catch (error) {
+      console.error('Database connection notice:', error.message);
+    }
+  })();
+  return dbInitPromise;
 };
 
-startServer();
+// Ensure DB is initialized before processing API requests
+app.use(async (req, res, next) => {
+  try {
+    await initDatabase();
+  } catch (err) {
+    // Non-blocking fallback
+  }
+  next();
+});
+
+// Database synchronization and server start for standalone/Render
+const startServer = async () => {
+  await initDatabase();
+  app.listen(PORT, () => {
+    console.log(`EBlood Backend & Admin Server running on http://localhost:${PORT}`);
+    console.log(`Web Admin Panel accessible at http://localhost:${PORT}/admin-panel`);
+  });
+};
+
+if (!process.env.VERCEL) {
+  startServer();
+}
 
 module.exports = app;
