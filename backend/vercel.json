@@ -5,10 +5,13 @@
       "includeFiles": "public/**"
     }
   },
+  "redirects": [
+    { "source": "/", "destination": "/admin", "permanent": false }
+  ],
   "rewrites": [
-    { "source": "/", "destination": "/index.html" },
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/admin-panel", "destination": "/admin.html" },
+    { "source": "/home", "destination": "/index.html" },
     { "source": "/api/:match*", "destination": "/api/index.js" },
     { "source": "/admin/:match*", "destination": "/api/index.js" },
     { "source": "/download/:match*", "destination": "/api/index.js" }
