@@ -192,7 +192,7 @@ app.use(async (req, res, next) => {
   if (req.path.startsWith('/api') || req.path.startsWith('/admin')) {
     try {
       await initDatabase();
-    } catch (err) {}
+    } catch (err) { }
   }
   next();
 });

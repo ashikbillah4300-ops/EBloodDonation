@@ -1,6 +1,10 @@
 package com.example.ui.screens
 
+import android.accounts.AccountManager
 import android.app.Activity
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -205,6 +209,20 @@ fun AuthScreen(viewModel: EBloodViewModel) {
     val showPhoneDialog by viewModel.showPhoneInputDialog.collectAsStateWithLifecycle()
     val showEmailDialog by viewModel.showEmailLoginDialog.collectAsStateWithLifecycle()
     val authError by viewModel.authErrorMessage.collectAsStateWithLifecycle()
+
+    val googleAccountPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK && result.data != null) {
+            val accountName = result.data?.getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
+            Log.d("GoogleSignIn", "System Google account picker selected: $accountName")
+            if (!accountName.isNullOrBlank()) {
+                viewModel.submitEmailForDirectLogin(accountName)
+            }
+        } else {
+            Log.d("GoogleSignIn", "System Google account picker cancelled by user")
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -453,7 +471,40 @@ fun AuthScreen(viewModel: EBloodViewModel) {
 
             // 8. Google Sign-In Button (Exact match to screenshot)
             OutlinedButton(
-                onClick = { viewModel.performGoogleSignIn(activity = context as? Activity) },
+                onClick = {
+                    val accounts = try {
+                        AccountManager.get(context).getAccountsByType("com.google")
+                    } catch (e: Exception) {
+                        emptyArray()
+                    }
+
+                    if (accounts.size == 1 && !accounts[0].name.isNullOrBlank()) {
+                        Log.d("GoogleSignIn", "Single Google account found: ${accounts[0].name}, logging in directly!")
+                        viewModel.submitEmailForDirectLogin(accounts[0].name)
+                        return@OutlinedButton
+                    }
+
+                    viewModel.performGoogleSignIn(
+                        activity = context as? Activity,
+                        onFallbackToSystemPicker = {
+                            try {
+                                val intent = AccountManager.newChooseAccountIntent(
+                                    null,
+                                    null,
+                                    arrayOf("com.google"),
+                                    null,
+                                    null,
+                                    null,
+                                    null
+                                )
+                                googleAccountPickerLauncher.launch(intent)
+                            } catch (e: Exception) {
+                                Log.e("GoogleSignIn", "Failed to launch system Google account picker", e)
+                                viewModel.showEmailLoginDialog.value = true
+                            }
+                        }
+                    )
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
@@ -520,7 +571,7 @@ fun AuthScreen(viewModel: EBloodViewModel) {
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "EBloodDonation v2.0 (Google Login Updated)",
+                text = "EBloodDonation v2.1 (One-Tap Google Login)",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color(0xFF9CA3AF)

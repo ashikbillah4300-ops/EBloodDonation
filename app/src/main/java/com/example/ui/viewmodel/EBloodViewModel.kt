@@ -408,7 +408,10 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
         finishAuthFlow(derivedPhone)
     }
 
-    fun performGoogleSignIn(activity: Activity? = null) {
+    fun performGoogleSignIn(
+        activity: Activity? = null,
+        onFallbackToSystemPicker: (() -> Unit)? = null
+    ) {
         authErrorMessage.value = null
         val existingEmail = inputEmail.value.trim()
         Log.d("GoogleSignIn", "performGoogleSignIn called. activity != null: ${activity != null}, existingEmail: '$existingEmail'")
@@ -482,34 +485,46 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                     Log.w("GoogleSignIn", "Google Sign-In was cancelled by user: ${e.message}")
                     authErrorMessage.value = "গুগল সাইন-ইন বাতিল করা হয়েছে (Sign-in cancelled)"
                 } catch (e: NoCredentialException) {
-                    Log.e("GoogleSignIn", "No credentials available on device: ${e.message}", e)
-                    authErrorMessage.value = "ডিভাইসে কোনো গুগল একাউন্ট পাওয়া যায়নি (No Google account found)"
-                    showEmailLoginDialog.value = true
-                } catch (e: GetCredentialCustomException) {
-                    Log.e("GoogleSignIn", "CredentialManager CustomException (type=${e.type}): ${e.message}", e)
-                    val msg = e.message ?: ""
-                    if (e.type.contains("16") || msg.contains("16") || msg.contains("Cannot find a matching credential", ignoreCase = true)) {
-                        authErrorMessage.value = "⚠️ Google Sign-In Setup Issue (Error 16 / SHA-1 Mismatch):\nFirebase Console-এ আপনার অ্যাপের সাইনিং SHA-1 কি যোগ করা নেই।"
-                    } else if (e.type.contains("10") || msg.contains("10") || msg.contains("DEVELOPER_ERROR", ignoreCase = true)) {
-                        authErrorMessage.value = "⚠️ Google Developer Error (Error 10):\nFirebase Console-এ SHA-1 বা Google Sign-in Provider কনফিগার করা নেই।"
+                    Log.w("GoogleSignIn", "NoCredentialException from CredentialManager. Attempting system Google Account Picker fallback...")
+                    if (onFallbackToSystemPicker != null) {
+                        onFallbackToSystemPicker()
                     } else {
-                        authErrorMessage.value = "Google সাইন-ইনে সমস্যা হয়েছে: ${e.type} - ${e.message}"
+                        authErrorMessage.value = "ডিভাইসে কোনো গুগল একাউন্ট পাওয়া যায়নি (No Google account found)"
+                        showEmailLoginDialog.value = true
                     }
-                    showEmailLoginDialog.value = true
+                } catch (e: GetCredentialCustomException) {
+                    Log.w("GoogleSignIn", "CredentialManager CustomException (${e.type}): ${e.message}. Attempting system Google Account Picker fallback...")
+                    if (onFallbackToSystemPicker != null) {
+                        onFallbackToSystemPicker()
+                    } else {
+                        val msg = e.message ?: ""
+                        if (e.type.contains("16") || msg.contains("16") || msg.contains("Cannot find a matching credential", ignoreCase = true)) {
+                            authErrorMessage.value = "⚠️ Google Sign-In Setup Issue (Error 16 / SHA-1 Mismatch):\nFirebase Console-এ আপনার অ্যাপের সাইনিং SHA-1 কি যোগ করা নেই।"
+                        } else if (e.type.contains("10") || msg.contains("10") || msg.contains("DEVELOPER_ERROR", ignoreCase = true)) {
+                            authErrorMessage.value = "⚠️ Google Developer Error (Error 10):\nFirebase Console-এ SHA-1 বা Google Sign-in Provider কনফিগার করা নেই।"
+                        } else {
+                            authErrorMessage.value = "Google সাইন-ইনে সমস্যা হয়েছে: ${e.type} - ${e.message}"
+                        }
+                        showEmailLoginDialog.value = true
+                    }
                 } catch (e: Exception) {
-                    Log.e("GoogleSignIn", "Unexpected exception during Google Sign-In: ${e.message}", e)
-                    authErrorMessage.value = "Google লগইন ব্যর্থ হয়েছে: ${e.localizedMessage ?: e.message}"
-                    if (existingEmail.isNotBlank()) {
+                    Log.w("GoogleSignIn", "Unexpected exception during CredentialManager: ${e.message}. Attempting system Google Account Picker fallback...", e)
+                    if (onFallbackToSystemPicker != null) {
+                        onFallbackToSystemPicker()
+                    } else if (existingEmail.isNotBlank()) {
                         val fallbackPhone = "01" + Math.abs(existingEmail.hashCode()).toString().padStart(9, '0').takeLast(9)
                         finishAuthFlow(fallbackPhone)
                     } else {
+                        authErrorMessage.value = "Google লগইন ব্যর্থ হয়েছে: ${e.localizedMessage ?: e.message}"
                         showEmailLoginDialog.value = true
                     }
                 }
             }
         } else {
             Log.d("GoogleSignIn", "performGoogleSignIn called without activity reference")
-            if (existingEmail.isNotBlank()) {
+            if (onFallbackToSystemPicker != null) {
+                onFallbackToSystemPicker()
+            } else if (existingEmail.isNotBlank()) {
                 val fallbackPhone = "01" + Math.abs(existingEmail.hashCode()).toString().padStart(9, '0').takeLast(9)
                 finishAuthFlow(fallbackPhone)
             } else {
