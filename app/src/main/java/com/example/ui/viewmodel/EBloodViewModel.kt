@@ -165,7 +165,26 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
 
             delay(1200)
             if (user != null || hasActiveSession) {
-                _currentScreen.value = Screen.MAIN
+                // Verify donor profile completeness (real mobile, blood group, address, and name)
+                val isProfileComplete = user != null &&
+                    user.name.isNotBlank() &&
+                    user.bloodGroup.isNotBlank() &&
+                    user.address.isNotBlank() &&
+                    user.phone.startsWith("01") &&
+                    user.phone.length == 11
+                if (isProfileComplete) {
+                    _currentScreen.value = Screen.MAIN
+                } else if (hasActiveSession) {
+                    // Profile is incomplete: route directly to Profile Setup
+                    inputPhone.value = if (user?.phone?.startsWith("01") == true && user.phone.length == 11) user.phone else ""
+                    inputName.value = user?.name ?: sessionManager.getName()
+                    setupBloodGroup.value = if (user?.bloodGroup?.isNotBlank() == true) user.bloodGroup else "O+"
+                    setupLocation.value = user?.location ?: sessionManager.getLocation()
+                    setupAddress.value = user?.address ?: sessionManager.getAddress()
+                    _currentScreen.value = Screen.PROFILE_SETUP
+                } else {
+                    _currentScreen.value = Screen.AUTH
+                }
             } else {
                 _currentScreen.value = Screen.AUTH
             }
@@ -769,7 +788,15 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
             }
 
             val existingUser = repository.getDonorByPhone(formattedPhone)
-            if (existingUser != null && existingUser.name.isNotBlank()) {
+            val isComplete = existingUser != null &&
+                existingUser.name.isNotBlank() &&
+                existingUser.bloodGroup.isNotBlank() &&
+                existingUser.address.isNotBlank() &&
+                existingUser.phone.startsWith("01") &&
+                existingUser.phone.length == 11
+
+            // Existing registered donor with complete profile: take directly to Main Screen
+            if (isComplete && existingUser != null) {
                 val user = repository.signInUser(formattedPhone)
                 if (user != null) {
                     sessionManager.saveSession(
@@ -783,11 +810,11 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                     _currentScreen.value = Screen.MAIN
                     return@launch
                 }
-            } else if (authRes != null && authRes.success && !authRes.name.isNullOrBlank()) {
+            } else if (authRes != null && authRes.success && !authRes.name.isNullOrBlank() && !authRes.bloodGroup.isNullOrBlank() && !authRes.address.isNullOrBlank()) {
                 val user = repository.registerOrUpdateUser(
                     name = authRes.name,
                     phone = formattedPhone,
-                    bloodGroup = (authRes.bloodGroup ?: "O+").ifBlank { "O+" },
+                    bloodGroup = authRes.bloodGroup,
                     location = authRes.location ?: "",
                     address = authRes.address ?: ""
                 )
@@ -803,37 +830,21 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                 return@launch
             }
 
-            // Direct Login fallback: If name is available from Google or Email prefix, sign in immediately!
-            val candidateName = inputName.value.trim().ifBlank {
-                val emailPrefix = inputEmail.value.trim().substringBefore("@")
-                if (emailPrefix.isNotBlank()) emailPrefix.replaceFirstChar { it.uppercase() } else ""
-            }
-            if (candidateName.isNotBlank() && candidateName.length >= 2) {
-                val user = repository.registerOrUpdateUser(
-                    name = candidateName,
-                    phone = formattedPhone,
-                    bloodGroup = setupBloodGroup.value.ifBlank { "O+" },
-                    location = setupLocation.value.ifBlank { "ঢাকা" },
-                    address = setupAddress.value.ifBlank { "" }
-                )
-                sessionManager.saveSession(
-                    phone = user.phone,
-                    name = user.name,
-                    bloodGroup = user.bloodGroup,
-                    location = user.location,
-                    address = user.address,
-                    email = inputEmail.value.trim()
-                )
-                _currentScreen.value = Screen.MAIN
-                return@launch
-            }
-
-            // New number: prompt for user's name
+            // Incomplete or New donor (Gmail or Phone): Go to Profile Setup to choose Blood Group, Mobile Number, and Location!
             authErrorMessage.value = null
-            inputName.value = ""
-            setupLocation.value = ""
-            setupAddress.value = ""
-            _currentScreen.value = Screen.NAME_INPUT
+            if (formattedPhone.startsWith("01") && formattedPhone.length == 11 && !formattedPhone.startsWith("010")) {
+                inputPhone.value = formattedPhone
+            } else {
+                inputPhone.value = ""
+            }
+            if (inputName.value.isBlank()) {
+                val emailPrefix = inputEmail.value.trim().substringBefore("@")
+                inputName.value = if (emailPrefix.isNotBlank()) emailPrefix.replaceFirstChar { it.uppercase() } else ""
+            }
+            setupBloodGroup.value = if (existingUser?.bloodGroup?.isNotBlank() == true) existingUser.bloodGroup else "O+"
+            setupLocation.value = existingUser?.location ?: ""
+            setupAddress.value = existingUser?.address ?: ""
+            _currentScreen.value = Screen.PROFILE_SETUP
         }
     }
 
@@ -943,10 +954,28 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
         val phone = inputPhone.value.trim()
         val cleanDigits = phone.filter { it.isDigit() }
         val formattedPhone = if (cleanDigits.startsWith("0")) cleanDigits else "0$cleanDigits"
-        val name = inputName.value.trim()
 
+        val name = inputName.value.trim()
         if (name.isBlank()) {
             authErrorMessage.value = "অনুগ্রহ করে আপনার নাম লিখুন"
+            return
+        }
+
+        if (cleanDigits.length < 10) {
+            authErrorMessage.value = "অনুগ্রহ করে আপনার সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন (যেমন: 017XXXXXXXX)"
+            return
+        }
+
+        val bloodGroup = setupBloodGroup.value.trim().ifBlank { "O+" }
+        val loc = setupLocation.value.trim()
+        if (loc.isBlank()) {
+            authErrorMessage.value = "অনুগ্রহ করে আপনার এলাকা বা শহরের নাম লিখুন"
+            return
+        }
+
+        val addr = setupAddress.value.trim()
+        if (addr.isBlank()) {
+            authErrorMessage.value = "অনুগ্রহ করে আপনার পুরো ঠিকানা লিখুন (যেমন: রাস্তা, বাসা বা এলাকা)"
             return
         }
 
@@ -959,13 +988,10 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
             }
             authErrorMessage.value = null
 
-            val loc = setupLocation.value.trim().ifBlank { "ঢাকা" }
-            val addr = setupAddress.value.trim()
-
             val user = repository.registerOrUpdateUser(
                 name = name,
                 phone = formattedPhone,
-                bloodGroup = setupBloodGroup.value,
+                bloodGroup = bloodGroup,
                 location = loc,
                 address = addr
             )
@@ -974,7 +1000,8 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                 name = user.name,
                 bloodGroup = user.bloodGroup,
                 location = user.location,
-                address = user.address
+                address = user.address,
+                email = inputEmail.value.trim()
             )
 
             // Register/sync user on website REST API server
@@ -984,11 +1011,11 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                     rawUrl = serverUrl,
                     name = name,
                     phone = formattedPhone,
-                    bloodGroup = setupBloodGroup.value,
+                    bloodGroup = bloodGroup,
                     location = loc,
                     address = addr
                 )
-                if (authRes.token != null) {
+                if (authRes?.token != null) {
                     sessionManager.setBackendToken(authRes.token)
                 }
             } catch (e: Exception) {

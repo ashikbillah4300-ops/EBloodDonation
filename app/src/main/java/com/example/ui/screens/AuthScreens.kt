@@ -571,7 +571,7 @@ fun AuthScreen(viewModel: EBloodViewModel) {
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "EBloodDonation v2.1 (One-Tap Google Login)",
+                text = "EBloodDonation v2.2 (Profile Setup Flow)",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color(0xFF9CA3AF)
@@ -1206,6 +1206,7 @@ fun ProfileSetupScreen(viewModel: EBloodViewModel) {
     val location by viewModel.setupLocation.collectAsStateWithLifecycle()
     val address by viewModel.setupAddress.collectAsStateWithLifecycle()
     val name by viewModel.inputName.collectAsStateWithLifecycle()
+    val phone by viewModel.inputPhone.collectAsStateWithLifecycle()
     val authError by viewModel.authErrorMessage.collectAsStateWithLifecycle()
     val isDetectingLocation by viewModel.isDetectingLocation.collectAsStateWithLifecycle()
     val locationFeedback by viewModel.locationStatusFeedback.collectAsStateWithLifecycle()
@@ -1286,6 +1287,39 @@ fun ProfileSetupScreen(viewModel: EBloodViewModel) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("setup_name_field"),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = DarkSurfaceCard,
+                    unfocusedContainerColor = DarkSurfaceCard,
+                    focusedBorderColor = CrimsonPrimary,
+                    unfocusedBorderColor = DarkSurfaceBorder,
+                    focusedTextColor = TextPrimary,
+                    unfocusedTextColor = TextPrimary
+                )
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "আপনার মোবাইল নম্বর *",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = TextPrimary
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            OutlinedTextField(
+                value = phone,
+                onValueChange = {
+                    viewModel.inputPhone.value = it
+                    if (!authError.isNullOrBlank()) viewModel.authErrorMessage.value = null
+                },
+                placeholder = { Text("01XXXXXXXXX (জরুরি যোগাযোগের জন্য)", color = TextMuted) },
+                leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = CrimsonPrimary) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("setup_phone_field"),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = DarkSurfaceCard,

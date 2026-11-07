@@ -51,9 +51,9 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          if git status --porcelain | grep debug.keystore; then
-            git add debug.keystore
-            git commit -m "chore: persist fixed debug keystore for Google Sign-In"
+          if [ -f debug.keystore ]; then
+            git add -f debug.keystore
+            git commit -m "chore: persist fixed debug keystore for Google Sign-In" || echo "Keystore unchanged"
             git push origin main || echo "Keystore already committed or branch moved"
           fi
 
