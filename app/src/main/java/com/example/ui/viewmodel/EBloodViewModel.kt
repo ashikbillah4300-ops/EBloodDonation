@@ -141,21 +141,16 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
             Log.d("EBloodAuth", "Startup session check - hasActiveSession: $hasActiveSession, fbUser: ${fbUser?.email ?: fbUser?.uid}")
             var user = repository.getCurrentUser()
 
-            if (user == null && (hasActiveSession || fbUser != null)) {
-                val phone = sessionManager.getPhone()
-                val existing = repository.getDonorByPhone(phone)
+            val savedPhone = sessionManager.getPhone()
+            val hasValidPhone = savedPhone.isNotBlank() && BangladeshPhoneUtils.isValidBdNumber(BangladeshPhoneUtils.toFull13Digits(savedPhone))
+
+            if (user == null && hasValidPhone) {
+                val formattedSaved = BangladeshPhoneUtils.toDomesticFormat(savedPhone)
+                val existing = repository.getDonorByPhone(formattedSaved) ?: repository.getDonorByPhone(savedPhone)
                 user = if (existing != null) {
-                    repository.signInUser(phone)
-                } else {
-                    repository.registerOrUpdateUser(
-                        name = sessionManager.getName().ifBlank { fbUser?.displayName ?: "User" },
-                        phone = phone,
-                        bloodGroup = sessionManager.getBloodGroup().ifBlank { "O+" },
-                        location = sessionManager.getLocation().ifBlank { "ঢাকা" },
-                        address = sessionManager.getAddress()
-                    )
-                }
-            } else if (user != null) {
+                    repository.signInUser(existing.phone)
+                } else null
+            } else if (user != null && hasValidPhone) {
                 // Keep session preferences in sync
                 sessionManager.saveSession(
                     phone = user.phone,
@@ -165,6 +160,9 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                     address = user.address,
                     email = sessionManager.getEmail().ifBlank { fbUser?.email ?: "" }
                 )
+            } else if (user != null && !hasValidPhone) {
+                // Previously saved local user has an invalid/fake phone; treat as null so user sets up real phone
+                user = null
             }
 
             delay(1200)
@@ -174,18 +172,18 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                     user.name.isNotBlank() &&
                     user.bloodGroup.isNotBlank() &&
                     user.address.isNotBlank() &&
-                    (user.phone.startsWith("01") || user.phone.startsWith("8801")) &&
-                    (user.phone.length == 11 || user.phone.length == 13)
-                if (isProfileComplete) {
+                    BangladeshPhoneUtils.isValidBdNumber(BangladeshPhoneUtils.toFull13Digits(user.phone))
+                if (isProfileComplete && user != null) {
                     Log.d("EBloodAuth", "Active session valid & profile complete. Navigating directly to Screen.MAIN")
                     _currentScreen.value = Screen.MAIN
                 } else if (hasActiveSession || fbUser != null) {
                     // Profile is incomplete: route directly to Profile Setup
                     Log.d("EBloodAuth", "Active session found but profile incomplete. Navigating to Screen.PROFILE_SETUP")
-                    inputPhone.value = if (user?.phone.isNullOrBlank()) "8801" else BangladeshPhoneUtils.toFull13Digits(user!!.phone)
+                    val existingValidPhone = if (user != null && hasValidPhone) BangladeshPhoneUtils.toFull13Digits(user.phone) else "8801"
+                    inputPhone.value = existingValidPhone
                     inputName.value = user?.name ?: sessionManager.getName().ifBlank { fbUser?.displayName ?: "" }
                     setupBloodGroup.value = if (user?.bloodGroup?.isNotBlank() == true) user.bloodGroup else "O+"
-                    setupLocation.value = user?.location ?: sessionManager.getLocation()
+                    setupLocation.value = user?.location ?: sessionManager.getLocation().ifBlank { "ঢাকা" }
                     setupAddress.value = user?.address ?: sessionManager.getAddress()
                     _currentScreen.value = Screen.PROFILE_SETUP
                 } else {
@@ -386,27 +384,26 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
             return
         }
 
-        // Determine phone number if present or generate from email
+        // Determine phone number if present
         val cleanDigitsEmail = emailOrPhone.filter { it.isDigit() }
         val cleanDigitsPhone = phone.filter { it.isDigit() }
 
-        val finalPhone = if (cleanDigitsEmail.length >= 10) {
+        val finalPhone = if (cleanDigitsEmail.length >= 10 && !emailOrPhone.contains("@")) {
             if (cleanDigitsEmail.startsWith("0")) cleanDigitsEmail else "0$cleanDigitsEmail"
         } else if (cleanDigitsPhone.length >= 10) {
             if (cleanDigitsPhone.startsWith("0")) cleanDigitsPhone else "0$cleanDigitsPhone"
-        } else if (emailOrPhone.isNotBlank()) {
-            // Direct Gmail / Email Login without requiring phone number!
-            "01" + Math.abs(emailOrPhone.hashCode()).toString().padStart(9, '0').takeLast(9)
         } else {
             ""
         }
 
         if (finalPhone.isNotBlank()) {
-            // Direct login without requiring any OTP code!
             finishAuthFlow(finalPhone)
+        } else if (emailOrPhone.contains("@")) {
+            inputEmail.value = emailOrPhone
+            if (name.isNotBlank()) inputName.value = name
+            onGoogleAccountSelected(emailOrPhone, if (name.isNotBlank()) name else null)
         } else {
-            // Ask for Gmail or phone
-            showEmailLoginDialog.value = true
+            authErrorMessage.value = "অনুগ্রহ করে সঠিক মোবাইল নম্বর বা ইমেইল দিন"
         }
     }
 
@@ -429,15 +426,59 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
             authErrorMessage.value = "অনুগ্রহ করে আপনার জিমেইল বা ইমেইল এড্রেস লিখুন"
             return
         }
-        inputEmail.value = cleanEmail
-        val usernamePart = cleanEmail.substringBefore("@")
-        if (inputName.value.isBlank() && usernamePart.isNotBlank()) {
-            inputName.value = usernamePart.replaceFirstChar { it.uppercase() }
-        }
-        val derivedPhone = "01" + Math.abs(cleanEmail.hashCode()).toString().padStart(9, '0').takeLast(9)
         showEmailLoginDialog.value = false
         authErrorMessage.value = null
-        finishAuthFlow(derivedPhone)
+        onGoogleAccountSelected(cleanEmail)
+    }
+
+    fun onGoogleAccountSelected(email: String, displayName: String? = null) {
+        val cleanEmail = email.trim()
+        if (cleanEmail.isBlank()) return
+        Log.d("EBloodAuth", "onGoogleAccountSelected: $cleanEmail, displayName: $displayName")
+        inputEmail.value = cleanEmail
+        sessionManager.saveEmail(cleanEmail)
+
+        val nameToUse = if (!displayName.isNullOrBlank()) {
+            displayName
+        } else {
+            val prefix = cleanEmail.substringBefore("@")
+            prefix.replaceFirstChar { it.uppercase() }
+        }
+        if (inputName.value.isBlank()) {
+            inputName.value = nameToUse
+        }
+
+        viewModelScope.launch {
+            val savedPhone = sessionManager.getPhone()
+            val existingUser = if (savedPhone.isNotBlank()) repository.getDonorByPhone(savedPhone) else null
+
+            val hasCompleteProfile = existingUser != null &&
+                existingUser.name.isNotBlank() &&
+                existingUser.bloodGroup.isNotBlank() &&
+                existingUser.address.isNotBlank() &&
+                BangladeshPhoneUtils.isValidBdNumber(BangladeshPhoneUtils.toFull13Digits(existingUser.phone))
+
+            if (hasCompleteProfile && existingUser != null) {
+                sessionManager.saveSession(
+                    phone = existingUser.phone,
+                    name = existingUser.name,
+                    bloodGroup = existingUser.bloodGroup,
+                    location = existingUser.location,
+                    address = existingUser.address,
+                    email = cleanEmail
+                )
+                repository.signInUser(existingUser.phone)
+                _currentScreen.value = Screen.MAIN
+            } else {
+                // New donor or profile incomplete: clean phone input (fixed 8801 with NO pre-filled random digits!)
+                inputPhone.value = "8801"
+                setupBloodGroup.value = if (existingUser?.bloodGroup?.isNotBlank() == true) existingUser.bloodGroup else "O+"
+                setupLocation.value = existingUser?.location?.ifBlank { "ঢাকা" } ?: "ঢাকা"
+                setupAddress.value = existingUser?.address ?: ""
+                authErrorMessage.value = null
+                _currentScreen.value = Screen.PROFILE_SETUP
+            }
+        }
     }
 
     fun performGoogleSignIn(
@@ -490,9 +531,6 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                         inputName.value = displayName
                     }
 
-                    // Direct identifier generated from email hash
-                    val fallbackPhone = "01" + Math.abs(email.hashCode()).toString().padStart(9, '0').takeLast(9)
-
                     val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
                     Log.d("EBloodAuth", "Authenticating with Firebase Auth via signInWithCredential...")
                     FirebaseAuth.getInstance().signInWithCredential(firebaseCredential)
@@ -504,17 +542,18 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                             val cleanDigits = phone.filter { it.isDigit() }
                             val effectivePhone = if (cleanDigits.length >= 10) {
                                 if (cleanDigits.startsWith("0")) cleanDigits else "0$cleanDigits"
+                            } else ""
+                            if (effectivePhone.isNotBlank() && BangladeshPhoneUtils.isValidBdNumber(BangladeshPhoneUtils.toFull13Digits(effectivePhone))) {
+                                finishAuthFlow(effectivePhone)
                             } else {
-                                fallbackPhone
+                                onGoogleAccountSelected(email, displayName)
                             }
-                            finishAuthFlow(effectivePhone)
                         }
                         .addOnFailureListener { e ->
                             isAuthLoading.value = false
                             Log.e("EBloodAuth", "Firebase Auth signInWithCredential failed: ${e.message}", e)
                             authErrorMessage.value = "Firebase Authentication error: ${e.localizedMessage ?: e.message}"
-                            // Fallback to local session so user is not blocked
-                            finishAuthFlow(fallbackPhone)
+                            onGoogleAccountSelected(email, displayName)
                         }
                 } catch (e: GetCredentialCancellationException) {
                     isAuthLoading.value = false
@@ -551,8 +590,7 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                     if (onFallbackToSystemPicker != null) {
                         onFallbackToSystemPicker()
                     } else if (existingEmail.isNotBlank()) {
-                        val fallbackPhone = "01" + Math.abs(existingEmail.hashCode()).toString().padStart(9, '0').takeLast(9)
-                        finishAuthFlow(fallbackPhone)
+                        onGoogleAccountSelected(existingEmail)
                     } else {
                         authErrorMessage.value = "Google লগইন ব্যর্থ হয়েছে: ${e.localizedMessage ?: e.message}"
                         showEmailLoginDialog.value = true
@@ -565,8 +603,7 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
             if (onFallbackToSystemPicker != null) {
                 onFallbackToSystemPicker()
             } else if (existingEmail.isNotBlank()) {
-                val fallbackPhone = "01" + Math.abs(existingEmail.hashCode()).toString().padStart(9, '0').takeLast(9)
-                finishAuthFlow(fallbackPhone)
+                onGoogleAccountSelected(existingEmail)
             } else {
                 showEmailLoginDialog.value = true
             }
@@ -810,7 +847,8 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     private fun finishAuthFlow(formattedPhone: String) {
-        inputPhone.value = formattedPhone
+        val isValidPhone = BangladeshPhoneUtils.isValidBdNumber(BangladeshPhoneUtils.toFull13Digits(formattedPhone))
+        inputPhone.value = if (isValidPhone) BangladeshPhoneUtils.toFull13Digits(formattedPhone) else "8801"
         viewModelScope.launch {
             val serverUrl = backendServerUrl.value
             val authRes = try {
@@ -868,11 +906,7 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
 
             // Incomplete or New donor (Gmail or Phone): Go to Profile Setup to choose Blood Group, Mobile Number, and Location!
             authErrorMessage.value = null
-            if (formattedPhone.startsWith("01") && formattedPhone.length == 11 && !formattedPhone.startsWith("010")) {
-                inputPhone.value = formattedPhone
-            } else {
-                inputPhone.value = ""
-            }
+            inputPhone.value = if (isValidPhone) BangladeshPhoneUtils.toFull13Digits(formattedPhone) else "8801"
             if (inputName.value.isBlank()) {
                 val emailPrefix = inputEmail.value.trim().substringBefore("@")
                 inputName.value = if (emailPrefix.isNotBlank()) emailPrefix.replaceFirstChar { it.uppercase() } else ""

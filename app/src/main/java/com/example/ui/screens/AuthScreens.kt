@@ -220,7 +220,7 @@ fun AuthScreen(viewModel: EBloodViewModel) {
             val accountName = result.data?.getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
             Log.d("EBloodAuth", "System Google account picker selected: $accountName")
             if (!accountName.isNullOrBlank()) {
-                viewModel.submitEmailForDirectLogin(accountName)
+                viewModel.onGoogleAccountSelected(accountName)
             }
         } else {
             Log.d("EBloodAuth", "System Google account picker cancelled by user")
@@ -493,19 +493,6 @@ fun AuthScreen(viewModel: EBloodViewModel) {
                 enabled = !isAuthLoading,
                 onClick = {
                     Log.d("EBloodAuth", "Google Sign-In button tapped")
-                    val accounts = try {
-                        AccountManager.get(context).getAccountsByType("com.google")
-                    } catch (e: Exception) {
-                        Log.w("EBloodAuth", "Could not query device accounts: ${e.message}")
-                        emptyArray()
-                    }
-
-                    if (accounts.size == 1 && !accounts[0].name.isNullOrBlank()) {
-                        Log.d("EBloodAuth", "Single Google account found: ${accounts[0].name}, logging in directly!")
-                        viewModel.submitEmailForDirectLogin(accounts[0].name)
-                        return@OutlinedButton
-                    }
-
                     viewModel.performGoogleSignIn(
                         activity = context as? Activity,
                         onFallbackToSystemPicker = {
@@ -608,7 +595,7 @@ fun AuthScreen(viewModel: EBloodViewModel) {
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "EBloodDonation v2.4 (Google Auth, BD Phone & Back Nav)",
+                text = "EBloodDonation v2.5 (Clean Auth & BD Phone)",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color(0xFF9CA3AF)
@@ -734,7 +721,7 @@ fun OtpVerificationScreen(viewModel: EBloodViewModel) {
     val countdown by viewModel.otpCountdown.collectAsStateWithLifecycle()
     val phone by viewModel.inputPhone.collectAsStateWithLifecycle()
     val authError by viewModel.authErrorMessage.collectAsStateWithLifecycle()
-    val displayPhone = if (phone.isNotBlank()) phone else "1969114300"
+    val displayPhone = if (phone.isNotBlank()) phone else ""
 
     Box(
         modifier = Modifier

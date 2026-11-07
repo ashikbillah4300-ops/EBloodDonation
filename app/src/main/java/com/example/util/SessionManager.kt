@@ -85,17 +85,17 @@ class SessionManager(context: Context) {
 
     fun getPhone(): String {
         val saved = prefs.getString(KEY_PHONE, null)
-        if (!saved.isNullOrBlank()) return saved
+        if (!saved.isNullOrBlank()) {
+            val clean = saved.filter { it.isDigit() }
+            if (clean.length == 11 || clean.length == 13) {
+                return saved
+            }
+        }
         try {
             val fbPhone = FirebaseAuth.getInstance().currentUser?.phoneNumber
             if (!fbPhone.isNullOrBlank()) {
                 val clean = fbPhone.replace("+88", "").filter { it.isDigit() }
                 return if (clean.startsWith("0")) clean else "0$clean"
-            }
-            val fbEmail = FirebaseAuth.getInstance().currentUser?.email
-            val email = if (!fbEmail.isNullOrBlank()) fbEmail else getEmail()
-            if (email.isNotBlank()) {
-                return "01" + Math.abs(email.hashCode()).toString().padStart(9, '0').takeLast(9)
             }
         } catch (e: Exception) {
             e.printStackTrace()
