@@ -134,11 +134,13 @@ fun HomeScreen(viewModel: EBloodViewModel) {
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Blood group badge (green circle like in video)
+                    // Blood group badge (tap to edit profile/blood details)
                     Box(
                         modifier = Modifier
                             .size(46.dp)
+                            .clip(CircleShape)
                             .background(SuccessGreen, CircleShape)
+                            .clickable { viewModel.openEditProfile() }
                             .testTag("blood_group_badge"),
                         contentAlignment = Alignment.Center
                     ) {
@@ -493,7 +495,7 @@ fun HomeScreen(viewModel: EBloodViewModel) {
                         subtitle = "Edit details",
                         modifier = Modifier.weight(1f).testTag("quick_action_profile"),
                         onClick = {
-                            viewModel.setBottomTab(3)
+                            viewModel.openEditProfile()
                         }
                     )
                 }

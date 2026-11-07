@@ -22,7 +22,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Assignment
@@ -333,15 +335,21 @@ fun ProfileScreen(viewModel: EBloodViewModel) {
             // Blood Group badge
             Box(
                 modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
                     .background(SuccessGreen, RoundedCornerShape(12.dp))
-                    .padding(horizontal = 14.dp, vertical = 4.dp)
+                    .clickable { viewModel.openEditProfile() }
+                    .padding(horizontal = 14.dp, vertical = 6.dp)
             ) {
-                Text(
-                    text = bloodGroup,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
-                    color = Color.White
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = bloodGroup,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(text = "✏️", fontSize = 11.sp)
+                }
             }
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -403,12 +411,44 @@ fun ProfileScreen(viewModel: EBloodViewModel) {
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text(
-                        text = "Profile Information",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimary
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Profile Information",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = CrimsonPrimary.copy(alpha = 0.12f),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { viewModel.openEditProfile() }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Edit Profile",
+                                    tint = CrimsonPrimary,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Edit / এডিট",
+                                    color = CrimsonPrimary,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
 
                     ProfileInfoRow(label = "Name", value = name)
                     ProfileInfoRow(label = "Phone", value = phone)
@@ -438,14 +478,20 @@ fun ProfileScreen(viewModel: EBloodViewModel) {
                     Spacer(modifier = Modifier.height(12.dp))
 
                     ProfileSettingActionItem(
+                        icon = "🩸",
+                        title = "Edit Blood & Profile Details (ডিটেইলস এডিট)",
+                        onClick = { viewModel.openEditProfile() }
+                    )
+
+                    ProfileSettingActionItem(
                         icon = "✏️",
-                        title = "Edit Blood Group",
+                        title = "Edit Blood Group (রক্তের গ্রুপ পরিবর্তন)",
                         onClick = { viewModel.showEditBloodGroupDialog.value = true }
                     )
 
                     ProfileSettingActionItem(
                         icon = "📍",
-                        title = "Update Location",
+                        title = "Update Location (ঠিকানা আপডেট)",
                         onClick = { viewModel.showUpdateLocationDialog.value = true }
                     )
 
@@ -751,6 +797,235 @@ fun ProfileScreen(viewModel: EBloodViewModel) {
             containerColor = DarkSurfaceCard
         )
     }
+
+    // Comprehensive Edit Profile & Blood Details Dialog
+    EditProfileDialog(viewModel = viewModel)
+}
+
+@Composable
+fun EditProfileDialog(viewModel: EBloodViewModel) {
+    val showDialog by viewModel.showEditProfileDialog.collectAsStateWithLifecycle()
+    if (!showDialog) return
+
+    val name by viewModel.editProfileName.collectAsStateWithLifecycle()
+    val phone by viewModel.editProfilePhone.collectAsStateWithLifecycle()
+    val bloodGroup by viewModel.editProfileBloodGroup.collectAsStateWithLifecycle()
+    val location by viewModel.editProfileLocation.collectAsStateWithLifecycle()
+    val address by viewModel.editProfileAddress.collectAsStateWithLifecycle()
+    val feedback by viewModel.editProfileFeedback.collectAsStateWithLifecycle()
+
+    val groups = listOf("A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-")
+
+    AlertDialog(
+        onDismissRequest = { viewModel.showEditProfileDialog.value = false },
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(text = "🩸", fontSize = 20.sp)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Edit Profile & Blood Details\n(রক্তের তথ্য ও প্রোফাইল এডিট)",
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary
+                )
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                if (!feedback.isNullOrBlank()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFFFEBEE), RoundedCornerShape(8.dp))
+                            .border(1.dp, Color(0xFFEF5350), RoundedCornerShape(8.dp))
+                            .padding(8.dp)
+                    ) {
+                        Text(
+                            text = feedback ?: "",
+                            color = Color(0xFFC62828),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+
+                // Name
+                Column {
+                    Text("আপনার নাম *", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { viewModel.editProfileName.value = it },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedBorderColor = CrimsonPrimary,
+                            unfocusedBorderColor = DarkSurfaceBorder
+                        )
+                    )
+                }
+
+                // Phone
+                Column {
+                    Text("মোবাইল নম্বর *", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    OutlinedTextField(
+                        value = phone,
+                        onValueChange = { viewModel.editProfilePhone.value = it },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        placeholder = { Text("01XXXXXXXXX", color = TextMuted) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedBorderColor = CrimsonPrimary,
+                            unfocusedBorderColor = DarkSurfaceBorder
+                        )
+                    )
+                }
+
+                // Blood Group
+                Column {
+                    Text("রক্তের গ্রুপ (Blood Group) *", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                            groups.take(4).forEach { bg ->
+                                val isSelected = bloodGroup == bg
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(40.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(if (isSelected) CrimsonPrimary else DarkSurfaceElevated)
+                                        .border(1.dp, if (isSelected) CrimsonPrimary else DarkSurfaceBorder, RoundedCornerShape(8.dp))
+                                        .clickable { viewModel.editProfileBloodGroup.value = bg },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = bg,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        color = if (isSelected) Color.White else TextPrimary
+                                    )
+                                }
+                            }
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                            groups.drop(4).forEach { bg ->
+                                val isSelected = bloodGroup == bg
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(40.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(if (isSelected) CrimsonPrimary else DarkSurfaceElevated)
+                                        .border(1.dp, if (isSelected) CrimsonPrimary else DarkSurfaceBorder, RoundedCornerShape(8.dp))
+                                        .clickable { viewModel.editProfileBloodGroup.value = bg },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = bg,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        color = if (isSelected) Color.White else TextPrimary
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Location / Area
+                Column {
+                    Text("বর্তমান এলাকা বা শহর *", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    OutlinedTextField(
+                        value = location,
+                        onValueChange = { viewModel.editProfileLocation.value = it },
+                        placeholder = { Text("e.g. Uttara, Dhaka", color = TextMuted) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedBorderColor = CrimsonPrimary,
+                            unfocusedBorderColor = DarkSurfaceBorder
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    // Quick chips
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        listOf("ঢাকা", "উত্তরা", "ধানমন্ডি", "মিরপুর", "চট্টগ্রাম").forEach { chip ->
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(if (location == chip) CrimsonPrimary else DarkSurfaceElevated)
+                                    .clickable { viewModel.editProfileLocation.value = chip }
+                                    .padding(horizontal = 6.dp, vertical = 3.dp)
+                            ) {
+                                Text(
+                                    text = chip,
+                                    fontSize = 10.sp,
+                                    color = if (location == chip) Color.White else TextSecondary
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Full Street Address
+                Column {
+                    Text("বাসা ও রাস্তার ঠিকানা *", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    OutlinedTextField(
+                        value = address,
+                        onValueChange = { viewModel.editProfileAddress.value = it },
+                        placeholder = { Text("রাস্তা ও বাসার বিবরণ", color = TextMuted) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedBorderColor = CrimsonPrimary,
+                            unfocusedBorderColor = DarkSurfaceBorder
+                        )
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { viewModel.saveFullProfile() },
+                colors = ButtonDefaults.buttonColors(containerColor = CrimsonPrimary),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Text("Save / সংরক্ষণ", fontWeight = FontWeight.Bold, color = Color.White)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = { viewModel.showEditProfileDialog.value = false }) {
+                Text("Cancel / বাতিল", color = TextSecondary)
+            }
+        },
+        containerColor = DarkSurfaceCard,
+        shape = RoundedCornerShape(16.dp)
+    )
 }
 
 @Composable

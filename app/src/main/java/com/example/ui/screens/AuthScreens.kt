@@ -571,7 +571,7 @@ fun AuthScreen(viewModel: EBloodViewModel) {
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "EBloodDonation v2.2 (Profile Setup Flow)",
+                text = "EBloodDonation v2.3 (Back Navigation & Profile Edit)",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color(0xFF9CA3AF)

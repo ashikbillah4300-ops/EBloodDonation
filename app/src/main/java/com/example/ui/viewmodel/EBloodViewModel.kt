@@ -576,6 +576,15 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
     var showSupportDialog = MutableStateFlow(false)
     var showEditBloodGroupDialog = MutableStateFlow(false)
     var showUpdateLocationDialog = MutableStateFlow(false)
+    var showEditProfileDialog = MutableStateFlow(false)
+
+    // Edit Profile State
+    var editProfileName = MutableStateFlow("")
+    var editProfilePhone = MutableStateFlow("")
+    var editProfileBloodGroup = MutableStateFlow("O+")
+    var editProfileLocation = MutableStateFlow("")
+    var editProfileAddress = MutableStateFlow("")
+    var editProfileFeedback = MutableStateFlow<String?>(null)
 
     // Inbox & History tabs
     var activeInboxTab = MutableStateFlow(InboxTab.PENDING)
@@ -1051,18 +1060,230 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
     fun updateBloodGroup(newGroup: String) {
         val user = currentUser.value ?: return
         viewModelScope.launch {
-            repository.updateCurrentUser(user.copy(bloodGroup = newGroup))
+            val updated = user.copy(bloodGroup = newGroup)
+            repository.updateCurrentUser(updated)
             sessionManager.updateProfile(bloodGroup = newGroup)
             showEditBloodGroupDialog.value = false
+            try {
+                val serverUrl = backendServerUrl.value
+                BackendNetworkManager.registerUser(
+                    rawUrl = serverUrl,
+                    name = user.name,
+                    phone = user.phone,
+                    bloodGroup = newGroup,
+                    location = user.location,
+                    address = user.address
+                )
+            } catch (e: Exception) {
+                Log.w("Profile", "Backend sync failed for blood group: ${e.message}")
+            }
         }
     }
 
     fun updateLocation(newLocation: String, newAddress: String) {
         val user = currentUser.value ?: return
         viewModelScope.launch {
-            repository.updateCurrentUser(user.copy(location = newLocation, address = newAddress))
+            val updated = user.copy(location = newLocation, address = newAddress)
+            repository.updateCurrentUser(updated)
             sessionManager.updateProfile(location = newLocation, address = newAddress)
             showUpdateLocationDialog.value = false
+            try {
+                val serverUrl = backendServerUrl.value
+                BackendNetworkManager.registerUser(
+                    rawUrl = serverUrl,
+                    name = user.name,
+                    phone = user.phone,
+                    bloodGroup = user.bloodGroup,
+                    location = newLocation,
+                    address = newAddress
+                )
+            } catch (e: Exception) {
+                Log.w("Profile", "Backend sync failed for location: ${e.message}")
+            }
+        }
+    }
+
+    fun openEditProfile() {
+        val user = currentUser.value
+        editProfileName.value = user?.name ?: sessionManager.getName()
+        editProfilePhone.value = user?.phone ?: sessionManager.getPhone()
+        editProfileBloodGroup.value = if (user?.bloodGroup?.isNotBlank() == true) user.bloodGroup else sessionManager.getBloodGroup().ifBlank { "O+" }
+        editProfileLocation.value = user?.location ?: sessionManager.getLocation()
+        editProfileAddress.value = user?.address ?: sessionManager.getAddress()
+        editProfileFeedback.value = null
+        showEditProfileDialog.value = true
+    }
+
+    fun saveFullProfile() {
+        val name = editProfileName.value.trim()
+        val phone = editProfilePhone.value.trim()
+        val cleanPhone = phone.filter { it.isDigit() }
+        val formattedPhone = if (cleanPhone.startsWith("0")) cleanPhone else "0$cleanPhone"
+        val bloodGroup = editProfileBloodGroup.value.trim().ifBlank { "O+" }
+        val location = editProfileLocation.value.trim()
+        val address = editProfileAddress.value.trim()
+
+        if (name.isBlank()) {
+            editProfileFeedback.value = "অনুগ্রহ করে আপনার নাম লিখুন"
+            return
+        }
+        if (cleanPhone.length < 10) {
+            editProfileFeedback.value = "অনুগ্রহ করে সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন"
+            return
+        }
+        if (location.isBlank()) {
+            editProfileFeedback.value = "অনুগ্রহ করে আপনার এলাকা বা শহরের নাম লিখুন"
+            return
+        }
+        if (address.isBlank()) {
+            editProfileFeedback.value = "অনুগ্রহ করে আপনার বাসা বা রাস্তার ঠিকানা লিখুন"
+            return
+        }
+
+        viewModelScope.launch {
+            val user = currentUser.value
+            val isTaken = repository.isNameTaken(name, formattedPhone)
+            if (isTaken && name != user?.name) {
+                editProfileFeedback.value = "⚠️ '$name' নামটি ইতিমধ্যে অন্য একজন ব্যবহার করেছেন! ভিন্ন নাম দিন।"
+                return@launch
+            }
+
+            val updated = user?.copy(
+                name = name,
+                phone = formattedPhone,
+                bloodGroup = bloodGroup,
+                location = location,
+                address = address
+            ) ?: repository.registerOrUpdateUser(
+                name = name,
+                phone = formattedPhone,
+                bloodGroup = bloodGroup,
+                location = location,
+                address = address
+            )
+
+            repository.updateCurrentUser(updated)
+            sessionManager.saveSession(
+                phone = formattedPhone,
+                name = name,
+                bloodGroup = bloodGroup,
+                location = location,
+                address = address,
+                email = sessionManager.getEmail()
+            )
+
+            try {
+                val serverUrl = backendServerUrl.value
+                BackendNetworkManager.registerUser(
+                    rawUrl = serverUrl,
+                    name = name,
+                    phone = formattedPhone,
+                    bloodGroup = bloodGroup,
+                    location = location,
+                    address = address
+                )
+            } catch (e: Exception) {
+                Log.w("Profile", "Backend sync failed during profile edit: ${e.message}")
+            }
+
+            showEditProfileDialog.value = false
+            editProfileFeedback.value = null
+        }
+    }
+
+    fun handleBackPress(): Boolean {
+        // 1. If any dialog is open, dismiss it
+        if (showEditProfileDialog.value) {
+            showEditProfileDialog.value = false
+            return true
+        }
+        if (showEditBloodGroupDialog.value) {
+            showEditBloodGroupDialog.value = false
+            return true
+        }
+        if (showUpdateLocationDialog.value) {
+            showUpdateLocationDialog.value = false
+            return true
+        }
+        if (showSupportDialog.value) {
+            showSupportDialog.value = false
+            return true
+        }
+        if (showEmailLoginDialog.value) {
+            showEmailLoginDialog.value = false
+            return true
+        }
+        if (showPhoneInputDialog.value) {
+            showPhoneInputDialog.value = false
+            return true
+        }
+
+        // 2. Sequential back navigation by screen
+        when (_currentScreen.value) {
+            Screen.CREATE_REQUEST_STEP3 -> {
+                _currentScreen.value = Screen.CREATE_REQUEST_STEP2
+                return true
+            }
+            Screen.CREATE_REQUEST_STEP2 -> {
+                _currentScreen.value = Screen.CREATE_REQUEST_STEP1
+                return true
+            }
+            Screen.CREATE_REQUEST_STEP1 -> {
+                _currentScreen.value = Screen.MAIN
+                return true
+            }
+            Screen.REQUEST_SENT_SUCCESS -> {
+                _currentScreen.value = Screen.MAIN
+                return true
+            }
+            Screen.CONTACT_REVEALED -> {
+                _currentScreen.value = Screen.MAIN
+                return true
+            }
+            Screen.ADMIN_DASHBOARD -> {
+                _currentScreen.value = Screen.MAIN
+                return true
+            }
+            Screen.ADMIN_LOGIN -> {
+                _currentScreen.value = Screen.MAIN
+                return true
+            }
+            Screen.PROFILE_SETUP -> {
+                if (sessionManager.isLoggedIn()) {
+                    _currentScreen.value = Screen.MAIN
+                    return true
+                } else {
+                    _currentScreen.value = Screen.AUTH
+                    return true
+                }
+            }
+            Screen.NAME_INPUT -> {
+                _currentScreen.value = Screen.AUTH
+                return true
+            }
+            Screen.OTP_VERIFY -> {
+                _currentScreen.value = Screen.AUTH
+                return true
+            }
+            Screen.AUTH -> {
+                if (isSignUpMode.value) {
+                    isSignUpMode.value = false
+                    return true
+                }
+                return false // Root of Auth: allow double-press exit
+            }
+            Screen.MAIN -> {
+                // If on Inbox (1), History (2), or Profile (3), go back to Home (0)
+                if (_activeBottomTab.value != 0) {
+                    _activeBottomTab.value = 0
+                    return true
+                }
+                // At root of Main (Home screen): double-press exit
+                return false
+            }
+            Screen.SPLASH -> {
+                return false
+            }
         }
     }
 

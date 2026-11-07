@@ -1,10 +1,13 @@
 package com.example
 
 import android.Manifest
+import android.app.Activity
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -35,6 +38,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -54,6 +60,7 @@ import com.example.ui.screens.AdminDashboardScreen
 import com.example.ui.screens.AdminLoginScreen
 import com.example.ui.screens.AuthScreen
 import com.example.ui.screens.ContactRevealedScreen
+import com.example.ui.screens.EditProfileDialog
 import com.example.ui.screens.HistoryScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.InboxScreen
@@ -178,6 +185,27 @@ fun EBloodAppRoot(viewModel: EBloodViewModel) {
     val isAdminLoggedIn by viewModel.isAdminLoggedIn.collectAsStateWithLifecycle()
 
     val pendingCount = allRequests.count { it.status == "PENDING" }
+    val context = LocalContext.current
+    var lastBackPressTime by remember { mutableLongStateOf(0L) }
+
+    // Sequential Back Navigation & Double-Press Exit Handler
+    BackHandler {
+        if (alarmState != null) {
+            viewModel.dismissAlarm()
+            return@BackHandler
+        }
+
+        val handled = viewModel.handleBackPress()
+        if (!handled) {
+            val now = System.currentTimeMillis()
+            if (now - lastBackPressTime < 2000L) {
+                (context as? Activity)?.finish()
+            } else {
+                lastBackPressTime = now
+                Toast.makeText(context, "অ্যাপ থেকে বের হতে আবার ব্যাক চাপুন", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -361,6 +389,9 @@ fun EBloodAppRoot(viewModel: EBloodViewModel) {
                 onConfirmRequesterAlert = { viewModel.confirmAcceptanceAlertAndRevealContact(it) },
                 onDismissAlarm = { viewModel.dismissAlarm() }
             )
+
+            // Edit Profile & Blood Details Dialog (Accessible from anywhere)
+            EditProfileDialog(viewModel = viewModel)
         }
     }
 }
