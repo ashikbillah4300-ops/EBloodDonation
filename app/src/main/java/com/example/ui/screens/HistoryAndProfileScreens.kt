@@ -76,6 +76,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.BloodRequest
+import com.example.ui.components.FixedPrefixPhoneField
 import com.example.ui.theme.CrimsonContainer
 import com.example.ui.theme.CrimsonPrimary
 import com.example.ui.theme.DarkBackground
@@ -873,24 +874,14 @@ fun EditProfileDialog(viewModel: EBloodViewModel) {
                     )
                 }
 
-                // Phone
+                // Phone (Task 2: Fixed 8801 prefix, digits only, cursor clamping, paste cleaning)
                 Column {
-                    Text("মোবাইল নম্বর *", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    OutlinedTextField(
+                    FixedPrefixPhoneField(
                         value = phone,
                         onValueChange = { viewModel.editProfilePhone.value = it },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                        placeholder = { Text("01XXXXXXXXX", color = TextMuted) },
+                        label = "মোবাইল নম্বর *",
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(10.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = TextPrimary,
-                            unfocusedTextColor = TextPrimary,
-                            focusedBorderColor = CrimsonPrimary,
-                            unfocusedBorderColor = DarkSurfaceBorder
-                        )
+                        shape = RoundedCornerShape(10.dp)
                     )
                 }
 

@@ -22,19 +22,24 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -78,6 +83,7 @@ import com.example.ui.theme.DarkBackground
 import com.example.ui.theme.DarkSurfaceCard
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.theme.TextMuted
+import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
 import com.example.ui.viewmodel.EBloodViewModel
 import com.example.ui.viewmodel.Screen
@@ -186,25 +192,15 @@ fun EBloodAppRoot(viewModel: EBloodViewModel) {
 
     val pendingCount = allRequests.count { it.status == "PENDING" }
     val context = LocalContext.current
-    var lastBackPressTime by remember { mutableLongStateOf(0L) }
+    val showExitDialog by viewModel.showExitAppDialog.collectAsStateWithLifecycle()
 
-    // Sequential Back Navigation & Double-Press Exit Handler
+    // Sequential Back Navigation & Root Exit Confirmation
     BackHandler {
         if (alarmState != null) {
             viewModel.dismissAlarm()
             return@BackHandler
         }
-
-        val handled = viewModel.handleBackPress()
-        if (!handled) {
-            val now = System.currentTimeMillis()
-            if (now - lastBackPressTime < 2000L) {
-                (context as? Activity)?.finish()
-            } else {
-                lastBackPressTime = now
-                Toast.makeText(context, "অ্যাপ থেকে বের হতে আবার ব্যাক চাপুন", Toast.LENGTH_SHORT).show()
-            }
-        }
+        viewModel.handleBackPress()
     }
 
     Scaffold(
@@ -392,6 +388,49 @@ fun EBloodAppRoot(viewModel: EBloodViewModel) {
 
             // Edit Profile & Blood Details Dialog (Accessible from anywhere)
             EditProfileDialog(viewModel = viewModel)
+
+            // Task 3: Root Screen Exit Confirmation Popup Dialog
+            if (showExitDialog) {
+                AlertDialog(
+                    onDismissRequest = { viewModel.showExitAppDialog.value = false },
+                    title = {
+                        Text(
+                            text = "Exit App",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            color = TextPrimary
+                        )
+                    },
+                    text = {
+                        Text(
+                            text = "Do you want to exit the app?",
+                            fontSize = 15.sp,
+                            color = TextSecondary
+                        )
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                viewModel.showExitAppDialog.value = false
+                                (context as? Activity)?.finishAffinity()
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = CrimsonPrimary),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("OK", color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = { viewModel.showExitAppDialog.value = false }
+                        ) {
+                            Text("Cancel", color = TextSecondary, fontWeight = FontWeight.Medium)
+                        }
+                    },
+                    containerColor = DarkSurfaceCard,
+                    shape = RoundedCornerShape(16.dp)
+                )
+            }
         }
     }
 }

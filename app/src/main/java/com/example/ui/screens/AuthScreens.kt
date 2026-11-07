@@ -58,6 +58,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import com.example.ui.components.FixedPrefixPhoneField
+import com.example.util.BangladeshPhoneUtils
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -209,18 +211,19 @@ fun AuthScreen(viewModel: EBloodViewModel) {
     val showPhoneDialog by viewModel.showPhoneInputDialog.collectAsStateWithLifecycle()
     val showEmailDialog by viewModel.showEmailLoginDialog.collectAsStateWithLifecycle()
     val authError by viewModel.authErrorMessage.collectAsStateWithLifecycle()
+    val isAuthLoading by viewModel.isAuthLoading.collectAsStateWithLifecycle()
 
     val googleAccountPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK && result.data != null) {
             val accountName = result.data?.getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
-            Log.d("GoogleSignIn", "System Google account picker selected: $accountName")
+            Log.d("EBloodAuth", "System Google account picker selected: $accountName")
             if (!accountName.isNullOrBlank()) {
                 viewModel.submitEmailForDirectLogin(accountName)
             }
         } else {
-            Log.d("GoogleSignIn", "System Google account picker cancelled by user")
+            Log.d("EBloodAuth", "System Google account picker cancelled by user")
         }
     }
 
@@ -426,6 +429,7 @@ fun AuthScreen(viewModel: EBloodViewModel) {
             // 6. Primary Action Button: "Sign In" / "Sign Up" (Exact match to screenshot)
             Button(
                 onClick = { viewModel.performLoginOrSignUp() },
+                enabled = !isAuthLoading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
@@ -434,12 +438,27 @@ fun AuthScreen(viewModel: EBloodViewModel) {
                     containerColor = Color(0xFF2563EB)
                 )
             ) {
-                Text(
-                    text = if (isSignUp) "Sign Up" else "Sign In",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
+                if (isAuthLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "লগইন হচ্ছে...",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                } else {
+                    Text(
+                        text = if (isSignUp) "Sign Up" else "Sign In",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(28.dp))
@@ -471,15 +490,18 @@ fun AuthScreen(viewModel: EBloodViewModel) {
 
             // 8. Google Sign-In Button (Exact match to screenshot)
             OutlinedButton(
+                enabled = !isAuthLoading,
                 onClick = {
+                    Log.d("EBloodAuth", "Google Sign-In button tapped")
                     val accounts = try {
                         AccountManager.get(context).getAccountsByType("com.google")
                     } catch (e: Exception) {
+                        Log.w("EBloodAuth", "Could not query device accounts: ${e.message}")
                         emptyArray()
                     }
 
                     if (accounts.size == 1 && !accounts[0].name.isNullOrBlank()) {
-                        Log.d("GoogleSignIn", "Single Google account found: ${accounts[0].name}, logging in directly!")
+                        Log.d("EBloodAuth", "Single Google account found: ${accounts[0].name}, logging in directly!")
                         viewModel.submitEmailForDirectLogin(accounts[0].name)
                         return@OutlinedButton
                     }
@@ -499,7 +521,7 @@ fun AuthScreen(viewModel: EBloodViewModel) {
                                 )
                                 googleAccountPickerLauncher.launch(intent)
                             } catch (e: Exception) {
-                                Log.e("GoogleSignIn", "Failed to launch system Google account picker", e)
+                                Log.e("EBloodAuth", "Failed to launch system Google account picker", e)
                                 viewModel.showEmailLoginDialog.value = true
                             }
                         }
@@ -514,18 +536,33 @@ fun AuthScreen(viewModel: EBloodViewModel) {
                     containerColor = Color.White
                 )
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    GoogleGLogo(modifier = Modifier.size(20.dp))
+                if (isAuthLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = Color(0xFF4285F4)
+                    )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "Google",
-                        fontSize = 15.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1F2937)
+                        text = "গুগল সাইন-ইন হচ্ছে...",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF6B7280)
                     )
+                } else {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        GoogleGLogo(modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = "Google",
+                            fontSize = 15.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1F2937)
+                        )
+                    }
                 }
             }
 
@@ -571,7 +608,7 @@ fun AuthScreen(viewModel: EBloodViewModel) {
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "EBloodDonation v2.3 (Back Navigation & Profile Edit)",
+                text = "EBloodDonation v2.4 (Google Auth, BD Phone & Back Nav)",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color(0xFF9CA3AF)
@@ -598,20 +635,10 @@ fun AuthScreen(viewModel: EBloodViewModel) {
                             color = Color(0xFF4B5563)
                         )
                         Spacer(modifier = Modifier.height(14.dp))
-                        OutlinedTextField(
+                        FixedPrefixPhoneField(
                             value = phone,
                             onValueChange = { viewModel.inputPhone.value = it },
-                            placeholder = { Text("01XXXXXXXXX") },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Phone,
-                                    contentDescription = null,
-                                    tint = Color(0xFF2563EB)
-                                )
-                            },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                            modifier = Modifier.fillMaxWidth(),
+                            label = null,
                             shape = RoundedCornerShape(12.dp)
                         )
                     }
@@ -1300,35 +1327,19 @@ fun ProfileSetupScreen(viewModel: EBloodViewModel) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text(
-                text = "আপনার মোবাইল নম্বর *",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = TextPrimary
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            OutlinedTextField(
+            FixedPrefixPhoneField(
                 value = phone,
                 onValueChange = {
                     viewModel.inputPhone.value = it
                     if (!authError.isNullOrBlank()) viewModel.authErrorMessage.value = null
                 },
-                placeholder = { Text("01XXXXXXXXX (জরুরি যোগাযোগের জন্য)", color = TextMuted) },
-                leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = CrimsonPrimary) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                label = "আপনার মোবাইল নম্বর *",
+                isError = !authError.isNullOrBlank() && authError?.contains("নম্বর") == true,
+                errorMessage = if (authError?.contains("নম্বর") == true) authError else null,
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("setup_phone_field"),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = DarkSurfaceCard,
-                    unfocusedContainerColor = DarkSurfaceCard,
-                    focusedBorderColor = CrimsonPrimary,
-                    unfocusedBorderColor = DarkSurfaceBorder,
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary
-                )
+                shape = RoundedCornerShape(12.dp)
             )
 
             Spacer(modifier = Modifier.height(20.dp))

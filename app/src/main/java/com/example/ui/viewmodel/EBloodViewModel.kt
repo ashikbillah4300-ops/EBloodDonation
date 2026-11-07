@@ -13,6 +13,7 @@ import com.example.data.network.ConnectionTestResult
 import com.example.data.network.SyncResult
 import com.example.data.repository.EBloodRepository
 import com.example.util.ActiveAlarmState
+import com.example.util.BangladeshPhoneUtils
 import com.example.util.DeviceUtils
 import com.example.util.EmergencyAlarmManager
 import com.example.util.SessionManager
@@ -134,21 +135,23 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                 }
             }
 
-            // Check if user was previously logged in
+            // Check if user was previously logged in via Firebase Auth or local SessionManager
             val hasActiveSession = sessionManager.isLoggedIn()
+            val fbUser = try { FirebaseAuth.getInstance().currentUser } catch (e: Exception) { null }
+            Log.d("EBloodAuth", "Startup session check - hasActiveSession: $hasActiveSession, fbUser: ${fbUser?.email ?: fbUser?.uid}")
             var user = repository.getCurrentUser()
 
-            if (user == null && hasActiveSession) {
+            if (user == null && (hasActiveSession || fbUser != null)) {
                 val phone = sessionManager.getPhone()
                 val existing = repository.getDonorByPhone(phone)
                 user = if (existing != null) {
                     repository.signInUser(phone)
                 } else {
                     repository.registerOrUpdateUser(
-                        name = sessionManager.getName(),
+                        name = sessionManager.getName().ifBlank { fbUser?.displayName ?: "User" },
                         phone = phone,
-                        bloodGroup = sessionManager.getBloodGroup(),
-                        location = sessionManager.getLocation(),
+                        bloodGroup = sessionManager.getBloodGroup().ifBlank { "O+" },
+                        location = sessionManager.getLocation().ifBlank { "ঢাকা" },
                         address = sessionManager.getAddress()
                     )
                 }
@@ -159,33 +162,38 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                     name = user.name,
                     bloodGroup = user.bloodGroup,
                     location = user.location,
-                    address = user.address
+                    address = user.address,
+                    email = sessionManager.getEmail().ifBlank { fbUser?.email ?: "" }
                 )
             }
 
             delay(1200)
-            if (user != null || hasActiveSession) {
+            if (user != null || hasActiveSession || fbUser != null) {
                 // Verify donor profile completeness (real mobile, blood group, address, and name)
                 val isProfileComplete = user != null &&
                     user.name.isNotBlank() &&
                     user.bloodGroup.isNotBlank() &&
                     user.address.isNotBlank() &&
-                    user.phone.startsWith("01") &&
-                    user.phone.length == 11
+                    (user.phone.startsWith("01") || user.phone.startsWith("8801")) &&
+                    (user.phone.length == 11 || user.phone.length == 13)
                 if (isProfileComplete) {
+                    Log.d("EBloodAuth", "Active session valid & profile complete. Navigating directly to Screen.MAIN")
                     _currentScreen.value = Screen.MAIN
-                } else if (hasActiveSession) {
+                } else if (hasActiveSession || fbUser != null) {
                     // Profile is incomplete: route directly to Profile Setup
-                    inputPhone.value = if (user?.phone?.startsWith("01") == true && user.phone.length == 11) user.phone else ""
-                    inputName.value = user?.name ?: sessionManager.getName()
+                    Log.d("EBloodAuth", "Active session found but profile incomplete. Navigating to Screen.PROFILE_SETUP")
+                    inputPhone.value = if (user?.phone.isNullOrBlank()) "8801" else BangladeshPhoneUtils.toFull13Digits(user!!.phone)
+                    inputName.value = user?.name ?: sessionManager.getName().ifBlank { fbUser?.displayName ?: "" }
                     setupBloodGroup.value = if (user?.bloodGroup?.isNotBlank() == true) user.bloodGroup else "O+"
                     setupLocation.value = user?.location ?: sessionManager.getLocation()
                     setupAddress.value = user?.address ?: sessionManager.getAddress()
                     _currentScreen.value = Screen.PROFILE_SETUP
                 } else {
+                    Log.d("EBloodAuth", "No active session. Navigating to Screen.AUTH")
                     _currentScreen.value = Screen.AUTH
                 }
             } else {
+                Log.d("EBloodAuth", "No active session found. Navigating to Screen.AUTH")
                 _currentScreen.value = Screen.AUTH
             }
         }
@@ -320,14 +328,20 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
     private val _activeBottomTab = MutableStateFlow(0) // 0: Home, 1: Inbox, 2: History, 3: Profile
     val activeBottomTab: StateFlow<Int> = _activeBottomTab.asStateFlow()
 
+    // Navigation & Screen Back Stacks
+    val screenBackStack = mutableListOf<Screen>()
+    val bottomTabBackStack = mutableListOf<Int>()
+    var showExitAppDialog = MutableStateFlow(false)
+
     // Auth & Login State
     var authTab = MutableStateFlow(AuthTab.NEW_DONOR)
     var inputName = MutableStateFlow("")
-    var inputPhone = MutableStateFlow("")
+    var inputPhone = MutableStateFlow("8801")
     var inputEmail = MutableStateFlow("")
     var inputPassword = MutableStateFlow("")
     var isSignUpMode = MutableStateFlow(false)
     var passwordVisible = MutableStateFlow(false)
+    var isAuthLoading = MutableStateFlow(false)
     var showPhoneInputDialog = MutableStateFlow(false)
     var showEmailLoginDialog = MutableStateFlow(false)
     var showAlreadyRegisteredDialog = MutableStateFlow(false)
@@ -398,12 +412,11 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
 
     fun submitPhoneForDirectLogin() {
         val phone = inputPhone.value.trim()
-        val cleanDigits = phone.filter { it.isDigit() }
-        if (cleanDigits.length < 10) {
-            authErrorMessage.value = "অনুগ্রহ করে সঠিক মোবাইল নম্বর দিন (১১ ডিজিট)"
+        if (!BangladeshPhoneUtils.isValidBdNumber(phone)) {
+            authErrorMessage.value = "অনুগ্রহ করে সঠিক ১৩ ডিজিটের নম্বর দিন (যেমন: 8801XXXXXXXXX)"
             return
         }
-        val formattedPhone = if (cleanDigits.startsWith("0")) cleanDigits else "0$cleanDigits"
+        val formattedPhone = BangladeshPhoneUtils.toDomesticFormat(phone)
         showPhoneInputDialog.value = false
         authErrorMessage.value = null
         // Direct login without requiring any OTP code!
@@ -432,8 +445,9 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
         onFallbackToSystemPicker: (() -> Unit)? = null
     ) {
         authErrorMessage.value = null
+        isAuthLoading.value = true
         val existingEmail = inputEmail.value.trim()
-        Log.d("GoogleSignIn", "performGoogleSignIn called. activity != null: ${activity != null}, existingEmail: '$existingEmail'")
+        Log.d("EBloodAuth", "performGoogleSignIn initiated. activity != null: ${activity != null}, existingEmail: '$existingEmail'")
 
         if (activity != null) {
             viewModelScope.launch {
@@ -447,7 +461,7 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                     } catch (e: Exception) {
                         "743053486976-crsi0qt5qkrrqaocaep1bqqujtub0oj5.apps.googleusercontent.com"
                     }
-                    Log.d("GoogleSignIn", "Using Web Client ID: $webClientId")
+                    Log.d("EBloodAuth", "Using Web Client ID: $webClientId")
 
                     val googleIdOption = GetGoogleIdOption.Builder()
                         .setFilterByAuthorizedAccounts(false)
@@ -459,17 +473,17 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                         .addCredentialOption(googleIdOption)
                         .build()
 
-                    Log.d("GoogleSignIn", "Calling credentialManager.getCredential...")
+                    Log.d("EBloodAuth", "Calling credentialManager.getCredential...")
                     val result = credentialManager.getCredential(request = request, context = activity)
                     val credential = result.credential
-                    Log.d("GoogleSignIn", "Credential selected of type: ${credential.type}")
+                    Log.d("EBloodAuth", "Credential retrieved successfully. Type: ${credential.type}")
 
                     val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
                     val idToken = googleIdTokenCredential.idToken
                     val email = googleIdTokenCredential.id
                     val displayName = googleIdTokenCredential.displayName ?: ""
 
-                    Log.d("GoogleSignIn", "Google ID Token received for email: $email, name: $displayName")
+                    Log.d("EBloodAuth", "Google ID token obtained for email: $email, name: $displayName")
                     inputEmail.value = email
                     sessionManager.saveEmail(email)
                     if (displayName.isNotBlank()) {
@@ -480,11 +494,12 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                     val fallbackPhone = "01" + Math.abs(email.hashCode()).toString().padStart(9, '0').takeLast(9)
 
                     val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
-                    Log.d("GoogleSignIn", "Authenticating with Firebase Auth...")
+                    Log.d("EBloodAuth", "Authenticating with Firebase Auth via signInWithCredential...")
                     FirebaseAuth.getInstance().signInWithCredential(firebaseCredential)
                         .addOnSuccessListener { authResult ->
+                            isAuthLoading.value = false
                             val user = authResult.user
-                            Log.d("GoogleSignIn", "Firebase Auth SUCCESS! User UID: ${user?.uid}, Email: ${user?.email}")
+                            Log.d("EBloodAuth", "Firebase Auth SUCCESS! User UID: ${user?.uid}, Email: ${user?.email}")
                             val phone = user?.phoneNumber ?: ""
                             val cleanDigits = phone.filter { it.isDigit() }
                             val effectivePhone = if (cleanDigits.length >= 10) {
@@ -495,16 +510,19 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                             finishAuthFlow(effectivePhone)
                         }
                         .addOnFailureListener { e ->
-                            Log.e("GoogleSignIn", "Firebase Auth signInWithCredential failed: ${e.message}", e)
+                            isAuthLoading.value = false
+                            Log.e("EBloodAuth", "Firebase Auth signInWithCredential failed: ${e.message}", e)
                             authErrorMessage.value = "Firebase Authentication error: ${e.localizedMessage ?: e.message}"
                             // Fallback to local session so user is not blocked
                             finishAuthFlow(fallbackPhone)
                         }
                 } catch (e: GetCredentialCancellationException) {
-                    Log.w("GoogleSignIn", "Google Sign-In was cancelled by user: ${e.message}")
+                    isAuthLoading.value = false
+                    Log.d("EBloodAuth", "Google Sign-In was cancelled by user: ${e.message}")
                     authErrorMessage.value = "গুগল সাইন-ইন বাতিল করা হয়েছে (Sign-in cancelled)"
                 } catch (e: NoCredentialException) {
-                    Log.w("GoogleSignIn", "NoCredentialException from CredentialManager. Attempting system Google Account Picker fallback...")
+                    isAuthLoading.value = false
+                    Log.w("EBloodAuth", "NoCredentialException: No matching credentials found in CredentialManager.")
                     if (onFallbackToSystemPicker != null) {
                         onFallbackToSystemPicker()
                     } else {
@@ -512,22 +530,24 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                         showEmailLoginDialog.value = true
                     }
                 } catch (e: GetCredentialCustomException) {
-                    Log.w("GoogleSignIn", "CredentialManager CustomException (${e.type}): ${e.message}. Attempting system Google Account Picker fallback...")
+                    isAuthLoading.value = false
+                    Log.e("EBloodAuth", "CredentialManager CustomException (${e.type}): ${e.message}", e)
+                    val msg = e.message ?: ""
+                    if (e.type.contains("16") || msg.contains("16") || msg.contains("Cannot find a matching credential", ignoreCase = true)) {
+                        authErrorMessage.value = "⚠️ Google Sign-In Setup Issue (Error 16 / SHA-1 Mismatch):\nFirebase Console-এ আপনার অ্যাপের সাইনিং SHA-1 কি যোগ করা নেই।"
+                    } else if (e.type.contains("10") || msg.contains("10") || msg.contains("DEVELOPER_ERROR", ignoreCase = true)) {
+                        authErrorMessage.value = "⚠️ Google Developer Error (Error 10):\nFirebase Console-এ SHA-1 বা Google Sign-in Provider কনফিগার করা নেই।"
+                    } else {
+                        authErrorMessage.value = "Google সাইন-ইনে সমস্যা হয়েছে: ${e.type} - ${e.message}"
+                    }
                     if (onFallbackToSystemPicker != null) {
                         onFallbackToSystemPicker()
                     } else {
-                        val msg = e.message ?: ""
-                        if (e.type.contains("16") || msg.contains("16") || msg.contains("Cannot find a matching credential", ignoreCase = true)) {
-                            authErrorMessage.value = "⚠️ Google Sign-In Setup Issue (Error 16 / SHA-1 Mismatch):\nFirebase Console-এ আপনার অ্যাপের সাইনিং SHA-1 কি যোগ করা নেই।"
-                        } else if (e.type.contains("10") || msg.contains("10") || msg.contains("DEVELOPER_ERROR", ignoreCase = true)) {
-                            authErrorMessage.value = "⚠️ Google Developer Error (Error 10):\nFirebase Console-এ SHA-1 বা Google Sign-in Provider কনফিগার করা নেই।"
-                        } else {
-                            authErrorMessage.value = "Google সাইন-ইনে সমস্যা হয়েছে: ${e.type} - ${e.message}"
-                        }
                         showEmailLoginDialog.value = true
                     }
                 } catch (e: Exception) {
-                    Log.w("GoogleSignIn", "Unexpected exception during CredentialManager: ${e.message}. Attempting system Google Account Picker fallback...", e)
+                    isAuthLoading.value = false
+                    Log.e("EBloodAuth", "Unexpected exception during CredentialManager: ${e.message}", e)
                     if (onFallbackToSystemPicker != null) {
                         onFallbackToSystemPicker()
                     } else if (existingEmail.isNotBlank()) {
@@ -540,7 +560,8 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                 }
             }
         } else {
-            Log.d("GoogleSignIn", "performGoogleSignIn called without activity reference")
+            isAuthLoading.value = false
+            Log.d("EBloodAuth", "performGoogleSignIn called without activity reference")
             if (onFallbackToSystemPicker != null) {
                 onFallbackToSystemPicker()
             } else if (existingEmail.isNotBlank()) {
@@ -618,12 +639,18 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
     // Active revealed contact
     var revealedRequest = MutableStateFlow<BloodRequest?>(null)
 
-    fun navigateTo(screen: Screen) {
+    fun navigateTo(screen: Screen, addToBackStack: Boolean = true) {
+        if (addToBackStack && _currentScreen.value != screen && _currentScreen.value != Screen.SPLASH) {
+            screenBackStack.add(_currentScreen.value)
+        }
         _currentScreen.value = screen
     }
 
     fun setBottomTab(tabIndex: Int) {
-        _activeBottomTab.value = tabIndex
+        if (_activeBottomTab.value != tabIndex) {
+            bottomTabBackStack.add(_activeBottomTab.value)
+            _activeBottomTab.value = tabIndex
+        }
         _currentScreen.value = Screen.MAIN
     }
 
@@ -961,17 +988,15 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
 
     fun completeProfileSetup() {
         val phone = inputPhone.value.trim()
-        val cleanDigits = phone.filter { it.isDigit() }
-        val formattedPhone = if (cleanDigits.startsWith("0")) cleanDigits else "0$cleanDigits"
+        if (!BangladeshPhoneUtils.isValidBdNumber(phone)) {
+            authErrorMessage.value = "অনুগ্রহ করে সঠিক ১৩ ডিজিটের নম্বর দিন (যেমন: 8801XXXXXXXXX)"
+            return
+        }
+        val formattedPhone = BangladeshPhoneUtils.toDomesticFormat(phone)
 
         val name = inputName.value.trim()
         if (name.isBlank()) {
             authErrorMessage.value = "অনুগ্রহ করে আপনার নাম লিখুন"
-            return
-        }
-
-        if (cleanDigits.length < 10) {
-            authErrorMessage.value = "অনুগ্রহ করে আপনার সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন (যেমন: 017XXXXXXXX)"
             return
         }
 
@@ -1106,7 +1131,8 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
     fun openEditProfile() {
         val user = currentUser.value
         editProfileName.value = user?.name ?: sessionManager.getName()
-        editProfilePhone.value = user?.phone ?: sessionManager.getPhone()
+        val rawPhone = user?.phone ?: sessionManager.getPhone()
+        editProfilePhone.value = if (rawPhone.isNotBlank()) BangladeshPhoneUtils.toFull13Digits(rawPhone) else "8801"
         editProfileBloodGroup.value = if (user?.bloodGroup?.isNotBlank() == true) user.bloodGroup else sessionManager.getBloodGroup().ifBlank { "O+" }
         editProfileLocation.value = user?.location ?: sessionManager.getLocation()
         editProfileAddress.value = user?.address ?: sessionManager.getAddress()
@@ -1117,18 +1143,17 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
     fun saveFullProfile() {
         val name = editProfileName.value.trim()
         val phone = editProfilePhone.value.trim()
-        val cleanPhone = phone.filter { it.isDigit() }
-        val formattedPhone = if (cleanPhone.startsWith("0")) cleanPhone else "0$cleanPhone"
+        if (!BangladeshPhoneUtils.isValidBdNumber(phone)) {
+            editProfileFeedback.value = "অনুগ্রহ করে সঠিক ১৩ ডিজিটের নম্বর দিন (যেমন: 8801XXXXXXXXX)"
+            return
+        }
+        val formattedPhone = BangladeshPhoneUtils.toDomesticFormat(phone)
         val bloodGroup = editProfileBloodGroup.value.trim().ifBlank { "O+" }
         val location = editProfileLocation.value.trim()
         val address = editProfileAddress.value.trim()
 
         if (name.isBlank()) {
             editProfileFeedback.value = "অনুগ্রহ করে আপনার নাম লিখুন"
-            return
-        }
-        if (cleanPhone.length < 10) {
-            editProfileFeedback.value = "অনুগ্রহ করে সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন"
             return
         }
         if (location.isBlank()) {
@@ -1193,6 +1218,10 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
 
     fun handleBackPress(): Boolean {
         // 1. If any dialog is open, dismiss it
+        if (showExitAppDialog.value) {
+            showExitAppDialog.value = false
+            return true
+        }
         if (showEditProfileDialog.value) {
             showEditProfileDialog.value = false
             return true
@@ -1218,7 +1247,41 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
             return true
         }
 
-        // 2. Sequential back navigation by screen
+        // 2. If on MAIN screen
+        if (_currentScreen.value == Screen.MAIN) {
+            if (bottomTabBackStack.isNotEmpty()) {
+                val prevTab = bottomTabBackStack.removeAt(bottomTabBackStack.lastIndex)
+                _activeBottomTab.value = prevTab
+                return true
+            }
+            if (_activeBottomTab.value != 0) {
+                _activeBottomTab.value = 0
+                return true
+            }
+            // User is at root Home screen: show exit confirmation dialog
+            showExitAppDialog.value = true
+            return true
+        }
+
+        // 3. If on AUTH screen
+        if (_currentScreen.value == Screen.AUTH) {
+            if (isSignUpMode.value) {
+                isSignUpMode.value = false
+                return true
+            }
+            // User is at root Auth screen: show exit confirmation dialog
+            showExitAppDialog.value = true
+            return true
+        }
+
+        // 4. Pop from screen back stack if available
+        if (screenBackStack.isNotEmpty()) {
+            val prevScreen = screenBackStack.removeAt(screenBackStack.lastIndex)
+            _currentScreen.value = prevScreen
+            return true
+        }
+
+        // 5. Fallback sequential back navigation by screen
         when (_currentScreen.value) {
             Screen.CREATE_REQUEST_STEP3 -> {
                 _currentScreen.value = Screen.CREATE_REQUEST_STEP2
@@ -1228,22 +1291,10 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
                 _currentScreen.value = Screen.CREATE_REQUEST_STEP1
                 return true
             }
-            Screen.CREATE_REQUEST_STEP1 -> {
-                _currentScreen.value = Screen.MAIN
-                return true
-            }
-            Screen.REQUEST_SENT_SUCCESS -> {
-                _currentScreen.value = Screen.MAIN
-                return true
-            }
-            Screen.CONTACT_REVEALED -> {
-                _currentScreen.value = Screen.MAIN
-                return true
-            }
-            Screen.ADMIN_DASHBOARD -> {
-                _currentScreen.value = Screen.MAIN
-                return true
-            }
+            Screen.CREATE_REQUEST_STEP1,
+            Screen.REQUEST_SENT_SUCCESS,
+            Screen.CONTACT_REVEALED,
+            Screen.ADMIN_DASHBOARD,
             Screen.ADMIN_LOGIN -> {
                 _currentScreen.value = Screen.MAIN
                 return true
@@ -1251,59 +1302,50 @@ class EBloodViewModel(application: Application) : AndroidViewModel(application) 
             Screen.PROFILE_SETUP -> {
                 if (sessionManager.isLoggedIn()) {
                     _currentScreen.value = Screen.MAIN
-                    return true
                 } else {
                     _currentScreen.value = Screen.AUTH
-                    return true
                 }
-            }
-            Screen.NAME_INPUT -> {
-                _currentScreen.value = Screen.AUTH
                 return true
             }
+            Screen.NAME_INPUT,
             Screen.OTP_VERIFY -> {
                 _currentScreen.value = Screen.AUTH
                 return true
             }
-            Screen.AUTH -> {
-                if (isSignUpMode.value) {
-                    isSignUpMode.value = false
-                    return true
-                }
-                return false // Root of Auth: allow double-press exit
-            }
-            Screen.MAIN -> {
-                // If on Inbox (1), History (2), or Profile (3), go back to Home (0)
-                if (_activeBottomTab.value != 0) {
-                    _activeBottomTab.value = 0
-                    return true
-                }
-                // At root of Main (Home screen): double-press exit
-                return false
-            }
-            Screen.SPLASH -> {
-                return false
+            Screen.SPLASH -> return false
+            else -> {
+                _currentScreen.value = Screen.MAIN
+                return true
             }
         }
     }
 
     fun signOut() {
         viewModelScope.launch {
-            Log.d("Auth", "User signing out...")
+            Log.d("EBloodAuth", "User signing out...")
+            try {
+                FirebaseAuth.getInstance().signOut()
+                Log.d("EBloodAuth", "FirebaseAuth.signOut() completed successfully")
+            } catch (e: Exception) {
+                Log.e("EBloodAuth", "Error during FirebaseAuth.signOut()", e)
+            }
             try {
                 repository.signOut()
             } catch (e: Exception) {
-                Log.e("Auth", "Error signing out repository", e)
+                Log.e("EBloodAuth", "Error signing out repository", e)
             }
             sessionManager.clearSession()
             EmergencyAlarmManager.stopAlarm()
             inputName.value = ""
-            inputPhone.value = ""
+            inputPhone.value = "8801"
             inputEmail.value = ""
             inputPassword.value = ""
             authErrorMessage.value = null
+            screenBackStack.clear()
+            bottomTabBackStack.clear()
+            _activeBottomTab.value = 0
             _currentScreen.value = Screen.AUTH
-            Log.d("Auth", "User successfully signed out and navigated to AUTH screen.")
+            Log.d("EBloodAuth", "User successfully signed out and navigated to Screen.AUTH.")
         }
     }
 
